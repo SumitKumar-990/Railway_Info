@@ -10,6 +10,7 @@ class ETAPredictor:
     def __init__(self):
         self.model = None
         self.feature_names = None
+        self.interval_margin_minutes = 18.0
         self.load_model()
 
     def load_model(self):
@@ -20,10 +21,11 @@ class ETAPredictor:
             try:
                 self.model = xgb.XGBRegressor()
                 self.model.load_model(model_path)
-                with open(meta_path, "r") as f:
+                with open(meta_path, "r", encoding="utf-8") as f:
                     meta = json.load(f)
                     self.feature_names = meta.get("feature_names", [])
-                print(f"[OK] Loaded XGBoost ETA model from {model_path}")
+                    self.interval_margin_minutes = meta.get("prediction_interval_margin_90pct_minutes", 18.0)
+                print(f"[OK] Loaded XGBoost ETA model from {model_path} ({len(self.feature_names)} features)")
             except Exception as e:
                 print(f"[WARN] Error loading XGBoost model: {e}")
                 self.model = None
@@ -35,7 +37,7 @@ class ETAPredictor:
         """
         if self.model and self.feature_names:
             try:
-                row = [feature_dict.get(col, 0.0) for col in self.feature_names]
+                row = [float(feature_dict.get(col, 0.0)) for col in self.feature_names]
                 X_df = pd.DataFrame([row], columns=self.feature_names)
                 pred_minutes = float(self.model.predict(X_df)[0])
                 return max(5.0, pred_minutes)
@@ -52,12 +54,20 @@ class ETAPredictor:
         """
         Central Prediction Logic:
         Predicted ETA = Current Timestamp + Predicted Remaining Travel Time
+        Includes additive prediction interval bounds (90% confidence margin).
         """
         if current_time is None:
             current_time = datetime.now()
 
         remaining_minutes = self.predict_remaining_time(feature_dict)
         predicted_eta_datetime = current_time + timedelta(minutes=remaining_minutes)
+
+        # Compute Prediction Interval (Additive bounds)
+        margin = self.interval_margin_minutes
+        lower_minutes = max(5.0, remaining_minutes - margin)
+        upper_minutes = remaining_minutes + margin
+        lower_eta_dt = current_time + timedelta(minutes=lower_minutes)
+        upper_eta_dt = current_time + timedelta(minutes=upper_minutes)
 
         # Baseline & RF comparative calculations for visualization
         sched_remaining = feature_dict.get("scheduled_remaining_time_minutes", (feature_dict.get("distance_remaining_km", 500.0) / 85.0) * 60.0)
@@ -83,7 +93,13 @@ class ETAPredictor:
             "current_delay_minutes": round(delay, 1),
             "confidence": confidence,
             "prediction_factors": factors,
-            "prediction_timestamp": current_time.isoformat()
+            "prediction_timestamp": current_time.isoformat(),
+            # Additive new fields for uncertainty / prediction interval
+            "eta_lower_bound": lower_eta_dt.isoformat(),
+            "eta_lower_bound_formatted": lower_eta_dt.strftime("%H:%M"),
+            "eta_upper_bound": upper_eta_dt.isoformat(),
+            "eta_upper_bound_formatted": upper_eta_dt.strftime("%H:%M"),
+            "prediction_interval_margin_minutes": round(margin, 1)
         }
 
 predictor = ETAPredictor()

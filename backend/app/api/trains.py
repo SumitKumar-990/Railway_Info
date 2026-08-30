@@ -187,6 +187,11 @@ async def get_train_eta_prediction(train_id: str):
         "remaining_travel_time_minutes": prediction_result["remaining_travel_time_minutes"],
         "confidence": prediction_result["confidence"],
         "last_updated": datetime.now().isoformat(),
+        "eta_lower_bound": prediction_result.get("eta_lower_bound"),
+        "eta_lower_bound_formatted": prediction_result.get("eta_lower_bound_formatted"),
+        "eta_upper_bound": prediction_result.get("eta_upper_bound"),
+        "eta_upper_bound_formatted": prediction_result.get("eta_upper_bound_formatted"),
+        "prediction_interval_margin_minutes": prediction_result.get("prediction_interval_margin_minutes", 18.0),
         "data_source_transparency": {
             "is_live_gps": not train["is_estimated"],
             "is_estimated": train["is_estimated"],

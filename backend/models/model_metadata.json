@@ -1,5 +1,11 @@
 {
-  "model_type": "XGBoost Regressor",
+  "model_name": "RailVue AI Dynamic ETA Regressor",
+  "model_type": "XGBoost Regressor (Regularized)",
+  "pipeline_version": "2.1.0-leakage-free",
+  "validation_strategy": "Chronological Time-Based Journey Split (80/20) + TimeSeriesSplit (5-fold)",
+  "trained_at": "2026-08-30T11:14:39.010919",
+  "training_records": 12380,
+  "test_records": 3095,
   "feature_names": [
     "current_delay_minutes",
     "current_speed_kmph",
@@ -20,22 +26,54 @@
     "previous_station_delay",
     "upcoming_station_count"
   ],
+  "prediction_interval_std_minutes": 26.93,
+  "prediction_interval_margin_90pct_minutes": 44.3,
   "metrics": {
     "schedule_baseline": {
-      "mae": 11.84,
-      "rmse": 15.88,
-      "r2": 0.9966
+      "mae": 33.78,
+      "rmse": 50.86,
+      "r2": 0.9923
     },
     "random_forest": {
-      "mae": 8.09,
-      "rmse": 11.26,
-      "r2": 0.9983
+      "mae": 14.55,
+      "rmse": 20.35,
+      "r2": 0.9988
     },
     "xgboost": {
-      "mae": 6.68,
-      "rmse": 8.81,
-      "r2": 0.9989
+      "mae": 16.38,
+      "rmse": 26.99,
+      "r2": 0.9978
     }
   },
-  "trained_at": "2026-08-29T10:31:07.688259"
+  "ablation_results": {
+    "full_model": {
+      "mae": 16.38,
+      "rmse": 26.99,
+      "r2": 0.9978
+    },
+    "no_current_delay": {
+      "mae": 14.88,
+      "rmse": 24.13,
+      "r2": 0.9983
+    },
+    "lagged_delay_only": {
+      "mae": 14.88,
+      "rmse": 24.13,
+      "r2": 0.9983
+    },
+    "no_groupby_features": {
+      "mae": 14.92,
+      "rmse": 24.24,
+      "r2": 0.9982
+    }
+  },
+  "timeseries_cv_mae_mean": 16.27,
+  "leakage_audit_status": "VERIFIED_LEAKAGE_FREE",
+  "data_lineage": {
+    "split_method": "Chronological journey-level cutoff",
+    "groupby_leakage_prevented": true,
+    "synthetic_formula_identity_eliminated": true,
+    "real_station_coordinates": true,
+    "weather_source": "Open-Meteo Indian coordinates"
+  }
 }

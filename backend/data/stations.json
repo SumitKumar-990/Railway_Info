@@ -1,0 +1,154 @@
+{
+  "NDLS": {
+    "name": "New Delhi",
+    "code": "NDLS",
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "zone": "NR",
+    "elevation_m": 216
+  },
+  "CNB": {
+    "name": "Kanpur Central",
+    "code": "CNB",
+    "latitude": 26.4499,
+    "longitude": 80.3319,
+    "zone": "NCR",
+    "elevation_m": 127
+  },
+  "PRYJ": {
+    "name": "Prayagraj Junction",
+    "code": "PRYJ",
+    "latitude": 25.4358,
+    "longitude": 81.8463,
+    "zone": "NCR",
+    "elevation_m": 98
+  },
+  "DDU": {
+    "name": "Pt DD Upadhyaya Junction",
+    "code": "DDU",
+    "latitude": 25.2819,
+    "longitude": 83.1147,
+    "zone": "ECR",
+    "elevation_m": 78
+  },
+  "GAYA": {
+    "name": "Gaya Junction",
+    "code": "GAYA",
+    "latitude": 24.7955,
+    "longitude": 84.9994,
+    "zone": "ECR",
+    "elevation_m": 113
+  },
+  "DHN": {
+    "name": "Dhanbad Junction",
+    "code": "DHN",
+    "latitude": 23.7957,
+    "longitude": 86.4304,
+    "zone": "ECR",
+    "elevation_m": 227
+  },
+  "ASN": {
+    "name": "Asansol Junction",
+    "code": "ASN",
+    "latitude": 23.6889,
+    "longitude": 86.9661,
+    "zone": "ER",
+    "elevation_m": 126
+  },
+  "HWH": {
+    "name": "Howrah Junction",
+    "code": "HWH",
+    "latitude": 22.5851,
+    "longitude": 88.3426,
+    "zone": "ER",
+    "elevation_m": 12
+  },
+  "MMCT": {
+    "name": "Mumbai Central",
+    "code": "MMCT",
+    "latitude": 18.9696,
+    "longitude": 72.8193,
+    "zone": "WR",
+    "elevation_m": 8
+  },
+  "BRC": {
+    "name": "Vadodara Junction",
+    "code": "BRC",
+    "latitude": 22.3107,
+    "longitude": 73.1812,
+    "zone": "WR",
+    "elevation_m": 36
+  },
+  "KOTA": {
+    "name": "Kota Junction",
+    "code": "KOTA",
+    "latitude": 25.2138,
+    "longitude": 75.8648,
+    "zone": "WCR",
+    "elevation_m": 253
+  },
+  "AGC": {
+    "name": "Agra Cantt",
+    "code": "AGC",
+    "latitude": 27.1593,
+    "longitude": 77.9946,
+    "zone": "NCR",
+    "elevation_m": 169
+  },
+  "GWL": {
+    "name": "Gwalior Junction",
+    "code": "GWL",
+    "latitude": 26.2183,
+    "longitude": 78.1828,
+    "zone": "NCR",
+    "elevation_m": 212
+  },
+  "VGLJ": {
+    "name": "Virangana Lakshmibai Jhansi",
+    "code": "VGLJ",
+    "latitude": 25.4484,
+    "longitude": 78.5685,
+    "zone": "NCR",
+    "elevation_m": 258
+  },
+  "BPL": {
+    "name": "Bhopal Junction",
+    "code": "BPL",
+    "latitude": 23.2599,
+    "longitude": 77.4126,
+    "zone": "WCR",
+    "elevation_m": 505
+  },
+  "RKMP": {
+    "name": "Rani Kamalapati",
+    "code": "RKMP",
+    "latitude": 23.2052,
+    "longitude": 77.4394,
+    "zone": "WCR",
+    "elevation_m": 496
+  },
+  "BSB": {
+    "name": "Varanasi Junction",
+    "code": "BSB",
+    "latitude": 25.3268,
+    "longitude": 82.9863,
+    "zone": "NR",
+    "elevation_m": 81
+  },
+  "MAS": {
+    "name": "MGR Chennai Central",
+    "code": "MAS",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "zone": "SR",
+    "elevation_m": 7
+  },
+  "NZM": {
+    "name": "Hazrat Nizamuddin",
+    "code": "NZM",
+    "latitude": 28.5889,
+    "longitude": 77.2533,
+    "zone": "NR",
+    "elevation_m": 211
+  }
+}

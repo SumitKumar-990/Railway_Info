@@ -2,67 +2,83 @@ import os
 import pandas as pd
 import numpy as np
 
-def build_unified_ml_dataset(raw_df_path: str, output_path: str) -> pd.DataFrame:
+def compute_leakage_free_aggregates(df_train: pd.DataFrame) -> dict:
     """
-    Transforms raw train journey records into the unified ML feature dataset.
+    Computes historical groupby aggregates strictly on the TRAINING partition.
+    Returns lookup dictionaries and global fallback means.
     """
-    if not os.path.exists(raw_df_path):
-        from ingestion import generate_indian_railways_raw_data
-        df = generate_indian_railways_raw_data(2000)
-    else:
-        df = pd.read_csv(raw_df_path)
+    global_mean_delay = float(df_train['current_delay_minutes'].mean())
+    if np.isnan(global_mean_delay):
+        global_mean_delay = 8.0
 
-    # Feature transformation & engineering enrichment
-    df["current_station_id"] = df["station_id"]
-    df["next_station_id"] = df["station_id"].apply(lambda x: f"NEXT_{x}")
-    
-    # Synthesize coordinates for Indian Railway station nodes
-    station_coords = {
-        "NDLS": (28.6139, 77.2090),
-        "CNB": (26.4499, 80.3319),
-        "PRYJ": (25.4358, 81.8463),
-        "DDU": (25.2819, 83.1147),
-        "GAYA": (24.7955, 84.9994),
-        "DHN": (23.7957, 86.4304),
-        "HWH": (22.5851, 88.3426)
+    # Train-specific average delay
+    train_delay_map = df_train.groupby('train_id')['current_delay_minutes'].mean().to_dict()
+
+    # Station-specific average delay
+    station_delay_map = df_train.groupby('current_station_code')['current_delay_minutes'].mean().to_dict()
+
+    # Route/Zone-specific average delay
+    zone_delay_map = df_train.groupby('zone')['current_delay_minutes'].mean().to_dict()
+
+    # Hourly average delay
+    hour_delay_map = df_train.groupby('hour_of_day')['current_delay_minutes'].mean().to_dict()
+
+    return {
+        'global_mean_delay': global_mean_delay,
+        'train_delay_map': train_delay_map,
+        'station_delay_map': station_delay_map,
+        'zone_delay_map': zone_delay_map,
+        'hour_delay_map': hour_delay_map
     }
-    
-    lats = []
-    lngs = []
-    for code in df["station_code"]:
-        coords = station_coords.get(code, (26.0, 80.0))
-        lats.append(coords[0] + np.random.normal(0, 0.05))
-        lngs.append(coords[1] + np.random.normal(0, 0.05))
 
-    df["latitude"] = lats
-    df["longitude"] = lngs
-    df["distance_to_next_station_km"] = np.random.uniform(15, 120, size=len(df))
-    df["historical_avg_delay_minutes"] = df["historical_route_delay"]
-    df["station_avg_delay_minutes"] = df["historical_station_delay"]
-    df["route_avg_delay_minutes"] = (df["historical_route_delay"] + df["historical_station_delay"]) / 2.0
-    df["previous_station_delay"] = np.maximum(0, df["current_delay_minutes"] - np.random.uniform(0, 5, size=len(df)))
-    df["upcoming_station_count"] = np.random.randint(1, 10, size=len(df))
+def apply_leakage_free_features(df: pd.DataFrame, agg_stats: dict) -> pd.DataFrame:
+    """
+    Maps historical aggregate features onto a dataset using training-derived lookups.
+    Uses global fallback for unseen categories.
+    """
+    df = df.copy()
+    g_mean = agg_stats['global_mean_delay']
 
-    feature_cols = [
-        "train_id", "timestamp", "current_station_id", "next_station_id",
-        "latitude", "longitude", "current_delay_minutes", "current_speed_kmph",
-        "distance_to_next_station_km", "distance_remaining_km",
-        "scheduled_remaining_time_minutes", "historical_avg_delay_minutes",
-        "station_avg_delay_minutes", "route_avg_delay_minutes",
-        "hour_of_day", "day_of_week", "month", "weather_score", "rainfall_mm",
-        "congestion_score", "speed_restriction_score", "signal_delay_score",
-        "previous_station_delay", "upcoming_station_count",
-        "remaining_travel_time_minutes"
-    ]
+    df['historical_avg_delay_minutes'] = df['train_id'].map(agg_stats['train_delay_map']).fillna(g_mean)
+    df['station_avg_delay_minutes'] = df['current_station_code'].map(agg_stats['station_delay_map']).fillna(g_mean)
+    df['route_avg_delay_minutes'] = df['zone'].map(agg_stats['zone_delay_map']).fillna(g_mean)
 
-    processed_df = df[feature_cols].copy()
-    
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    processed_df.to_csv(output_path, index=False)
-    print(f"Created unified ML dataset: {output_path} ({len(processed_df)} records)")
-    return processed_df
+    # Ensure previous_station_delay exists (lagged delay)
+    if 'previous_station_delay' not in df.columns:
+        df['previous_station_delay'] = np.maximum(0.0, df['current_delay_minutes'] - 3.0)
 
-if __name__ == "__main__":
-    raw_path = "backend/data/raw/indian_railways/historical_train_runs.csv"
-    out_path = "backend/data/processed/features/unified_train_features.csv"
-    build_unified_ml_dataset(raw_path, out_path)
+    return df
+
+def build_unified_ml_dataset(raw_df_path: str = None, output_path: str = None) -> pd.DataFrame:
+    """
+    Loads master historical dataset, applies leakage-free feature engineering,
+    and returns the processed ML dataframe.
+    """
+    if raw_df_path is None:
+        raw_df_path = os.path.join(os.path.dirname(__file__), 'historical_train_data.csv')
+    if output_path is None:
+        output_path = os.path.join(os.path.dirname(__file__), 'processed', 'features', 'unified_train_features.csv')
+
+    if not os.path.exists(raw_df_path):
+        from ingestion import save_master_historical_dataset
+        df_raw = save_master_historical_dataset(raw_df_path)
+    else:
+        df_raw = pd.read_csv(raw_df_path)
+
+    # Chronological sort
+    df_raw = df_raw.sort_values('timestamp').reset_index(drop=True)
+
+    # Use first 80% chronologically as the reference historical baseline for aggregations
+    split_idx = int(len(df_raw) * 0.8)
+    df_train_part = df_raw.iloc[:split_idx]
+
+    agg_stats = compute_leakage_free_aggregates(df_train_part)
+    df_processed = apply_leakage_free_features(df_raw, agg_stats)
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    df_processed.to_csv(output_path, index=False)
+    print(f'[Transformation] Built unified ML dataset with leakage-free features: {output_path} ({len(df_processed)} records)')
+    return df_processed
+
+if __name__ == '__main__':
+    build_unified_ml_dataset()
