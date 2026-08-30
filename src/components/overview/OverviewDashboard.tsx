@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Train } from '../../types';
 import { Sparkles, Clock, MapPin, Gauge, CloudRain, TrafficCone, ShieldCheck, Check, Train as TrainIcon, Navigation, ArrowRight } from 'lucide-react';
 
