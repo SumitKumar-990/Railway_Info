@@ -30,25 +30,34 @@ class ETAPredictor:
                 print(f"[WARN] Error loading XGBoost model: {e}")
                 self.model = None
 
-    def predict_remaining_time(self, feature_dict: dict) -> float:
+    def predict_added_delay(self, feature_dict: dict) -> float:
         """
-        Predicts remaining_travel_time_minutes using the trained XGBoost model.
-        Falls back to baseline calculation if model artifact unavailable.
+        Predicts added_delay_minutes (delta above scheduled time) using XGBoost.
         """
         if self.model and self.feature_names:
             try:
                 row = [float(feature_dict.get(col, 0.0)) for col in self.feature_names]
                 X_df = pd.DataFrame([row], columns=self.feature_names)
-                pred_minutes = float(self.model.predict(X_df)[0])
-                return max(5.0, pred_minutes)
+                pred_delay = float(self.model.predict(X_df)[0])
+                return max(0.0, pred_delay)
             except Exception as e:
                 print(f"Inference warning: {e}")
 
-        # Fallback Schedule Baseline
-        dist = feature_dict.get("distance_remaining_km", 500.0)
-        delay = feature_dict.get("current_delay_minutes", 0.0)
-        sched_time = (dist / 85.0) * 60.0
-        return max(5.0, sched_time + delay * 0.7)
+        # Fallback delay extrapolation
+        curr_delay = float(feature_dict.get("current_delay_minutes", 0.0))
+        cong = float(feature_dict.get("congestion_score", 0.0))
+        wea = float(feature_dict.get("weather_score", 0.0))
+        return max(0.0, curr_delay * 0.75 + (cong * 12.0) + (wea * 8.0))
+
+    def predict_remaining_time(self, feature_dict: dict) -> float:
+        """
+        Reconstructs total remaining travel time:
+        Remaining Time = Scheduled Remaining Time + Predicted Added Delay
+        """
+        dist = float(feature_dict.get("distance_remaining_km", 500.0))
+        sched_time = float(feature_dict.get("scheduled_remaining_time_minutes", (dist / 82.0) * 60.0))
+        added_delay = self.predict_added_delay(feature_dict)
+        return max(5.0, sched_time + added_delay)
 
     def predict_dynamic_eta(self, feature_dict: dict, current_time: datetime = None) -> dict:
         """
@@ -70,7 +79,7 @@ class ETAPredictor:
         upper_eta_dt = current_time + timedelta(minutes=upper_minutes)
 
         # Baseline & RF comparative calculations for visualization
-        sched_remaining = feature_dict.get("scheduled_remaining_time_minutes", (feature_dict.get("distance_remaining_km", 500.0) / 85.0) * 60.0)
+        sched_remaining = feature_dict.get("scheduled_remaining_time_minutes", (feature_dict.get("distance_remaining_km", 500.0) / 82.0) * 60.0)
         delay = feature_dict.get("current_delay_minutes", 0.0)
 
         traditional_remaining = sched_remaining + delay
