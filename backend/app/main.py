@@ -38,14 +38,14 @@ async def live_simulation_ticker():
 async def lifespan(app: FastAPI):
     # Startup: Start background ticker
     ticker_task = asyncio.create_task(live_simulation_ticker())
-    print("[OK] Started RailSight AI Live Simulation Ticker (15s update interval)")
+    print("[OK] Started RailVue AI Live Simulation Ticker (15s update interval)")
     yield
     # Shutdown
     ticker_task.cancel()
 
 
 app = FastAPI(
-    title="RailSight AI API",
+    title="RailVue AI API",
     description="Real-Time Dynamic ETA Prediction System for Indian Railways (Smart India Hackathon)",
     version="1.0.0",
     lifespan=lifespan
@@ -66,7 +66,7 @@ app.include_router(network_router)
 @app.get("/")
 async def root():
     return {
-        "system": "RailSight AI - Real-Time Dynamic ETA Prediction System",
+        "system": "RailVue AI - Real-Time Dynamic ETA Prediction System",
         "event": "Smart India Hackathon Solution",
         "status": "Operational",
         "ml_model": "XGBoost Regressor (eta_xgboost.json)",

@@ -1,15 +1,19 @@
-# RailSight AI 🚆🤖
+<div align="center">
+  <img src="docs/logo.jpg" alt="RailVue AI Logo" width="190" style="border-radius: 24px; margin-bottom: 12px;" />
+  <h1>RailVue AI 🚆🤖</h1>
+  <p><strong>Next-Generation Real-Time Dynamic ETA Prediction & Congestion Management System for Indian Railways</strong></p>
+  <p><em>Smart India Hackathon (SIH) Solution</em></p>
 
-> **Next-Generation Real-Time Dynamic ETA Prediction & Congestion Management System for Indian Railways**  
-> *Smart India Hackathon (SIH) Solution*
-
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-Regression-FF6600?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io/)
-[![React](https://img.shields.io/badge/React-18.2%2B-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Vite](https://img.shields.io/badge/Vite-5.0%2B-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  <p>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" /></a>
+    <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
+    <a href="https://xgboost.readthedocs.io/"><img src="https://img.shields.io/badge/XGBoost-Regression-FF6600?style=for-the-badge&logo=xgboost&logoColor=white" alt="XGBoost" /></a>
+    <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18.2%2B-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+    <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.0%2B-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  </p>
+</div>
 
 ---
 
@@ -17,7 +21,7 @@
 
 Legacy train tracking platforms (such as NTES) rely on **static timetables and linear delay offsets** (e.g., adding current delay directly to scheduled arrival times). This approach fails in complex rail networks where delays compound or recover non-linearly due to **signal interlocks, trunk section density, weather disruptions, and temporary speed restrictions (TSR)**.
 
-**RailSight AI** solves this with a real-time, ML-driven dynamic prediction engine. By ingesting live train telemetry, spatial density metrics, signaling bottlenecks, and meteorological radar data, RailSight AI continuously re-predicts remaining travel times with **sub-minute precision** and explainable AI insights.
+**RailVue AI** solves this with a real-time, ML-driven dynamic prediction engine. By ingesting live train telemetry, spatial density metrics, signaling bottlenecks, and meteorological radar data, RailVue AI continuously re-predicts remaining travel times with **sub-minute precision** and explainable AI insights.
 
 ---
 
@@ -53,7 +57,7 @@ Trained and evaluated across multi-route Indian Railways tracking datasets:
 ## 🏗 System Architecture
 
 ```
-RailSight AI Architecture
+RailVue AI Architecture
 ├── 🐍 Python FastAPI Backend (Port 8000)
 │   ├── Dataset Ingestion & Unified Schema Transformation (ingestion.py, transformation.py)
 │   ├── Model Serialization Engine (backend/models/eta_xgboost.json & metadata)

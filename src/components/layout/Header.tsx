@@ -40,7 +40,7 @@ export default function Header({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-extrabold text-white tracking-tight font-heading flex items-center gap-1.5">
-              RailPulse <span className="text-cyan-400">AI</span>
+              RailVue <span className="text-cyan-400">AI</span>
             </h1>
             <span className="text-xs text-slate-500 font-bold">•</span>
             <span className="text-xs font-semibold text-slate-400 capitalize">
@@ -48,7 +48,7 @@ export default function Header({
             </span>
           </div>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            AI-Powered Real-Time Train Intelligence
+            Smarter ETA. Better Journeys.
           </p>
         </div>
       </div>

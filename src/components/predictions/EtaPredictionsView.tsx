@@ -32,7 +32,7 @@ export default function EtaPredictionsView({
       'Scheduled Arrival': schTotal,
       'Traditional NTES ETA': tradTotal,
       'Random Forest Baseline': rfTotal,
-      'RailSight AI XGBoost Predicted ETA': predTotal
+      'RailVue AI XGBoost Predicted ETA': predTotal
     };
   });
 
@@ -74,7 +74,7 @@ export default function EtaPredictionsView({
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Comparing Scheduled timetable vs Traditional static delay vs RailSight AI predictions
+              Comparing Scheduled timetable vs Traditional static delay vs RailVue AI predictions
             </p>
           </div>
 
@@ -123,7 +123,7 @@ export default function EtaPredictionsView({
               <Line type="monotone" dataKey="Scheduled Arrival" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" />
               <Line type="monotone" dataKey="Traditional NTES ETA" stroke="#f59e0b" strokeWidth={2} />
               <Line type="monotone" dataKey="Random Forest Baseline" stroke="#3b82f6" strokeWidth={2} strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="RailSight AI XGBoost Predicted ETA" stroke="#10b981" strokeWidth={3.5} dot={{ r: 5 }} />
+              <Line type="monotone" dataKey="RailVue AI XGBoost Predicted ETA" stroke="#10b981" strokeWidth={3.5} dot={{ r: 5 }} />
             </LineChart>
 
           </ResponsiveContainer>
@@ -132,7 +132,7 @@ export default function EtaPredictionsView({
         <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-200/80 flex items-start gap-3 text-xs text-blue-900">
           <HelpCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <strong className="font-bold">Why is RailSight AI predictions more accurate?</strong> Traditional delay tools only project current delay linearly across all future stations. RailSight AI evaluates downstream track occupancy, junction signal interlocks, fog speed limits, and schedule buffer padding to calculate true actual arrival times.
+            <strong className="font-bold">Why is RailVue AI predictions more accurate?</strong> Traditional delay tools only project current delay linearly across all future stations. RailVue AI evaluates downstream track occupancy, junction signal interlocks, fog speed limits, and schedule buffer padding to calculate true actual arrival times.
           </div>
         </div>
       </div>

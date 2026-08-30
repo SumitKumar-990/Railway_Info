@@ -33,13 +33,13 @@ export default function ApiPlaygroundView() {
   const handleCopyCode = () => {
     let snippet = '';
     if (codeLang === 'curl') {
-      snippet = `curl -X GET "https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta" \\
-  -H "Authorization: Bearer rs_live_key_993821" \\
+      snippet = `curl -X GET "https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta" \\
+  -H "Authorization: Bearer rv_live_key_993821" \\
   -H "Accept: application/json"`;
     } else if (codeLang === 'js') {
-      snippet = `const response = await fetch('https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta', {
+      snippet = `const response = await fetch('https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta', {
   headers: {
-    'Authorization': 'Bearer rs_live_key_993821',
+    'Authorization': 'Bearer rv_live_key_993821',
     'Accept': 'application/json'
   }
 });
@@ -48,8 +48,8 @@ console.log(data);`;
     } else {
       snippet = `import requests
 
-url = "https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta"
-headers = {"Authorization": "Bearer rs_live_key_993821"}
+url = "https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta"
+headers = {"Authorization": "Bearer rv_live_key_993821"}
 
 response = requests.get(url, headers=headers)
 print(response.json())`;
@@ -70,7 +70,7 @@ print(response.json())`;
             <span>Developer Integration Portal</span>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight font-heading">
-            RailSight AI API Sandbox & Playground
+            RailVue AI API Sandbox & Playground
           </h1>
           <p className="text-slate-300 text-sm mt-1 max-w-2xl">
             Test backend REST endpoints, inspect JSON ETA payload structures, and integrate AI predictions into external systems.
@@ -191,19 +191,19 @@ print(response.json())`;
             </div>
 
             <pre className="p-4 text-xs font-mono text-cyan-300 overflow-x-auto">
-              {codeLang === 'curl' && `curl -X GET "https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta" \\
-  -H "Authorization: Bearer rs_live_key_993821" \\
+              {codeLang === 'curl' && `curl -X GET "https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta" \\
+  -H "Authorization: Bearer rv_live_key_993821" \\
   -H "Accept: application/json"`}
-              {codeLang === 'js' && `const response = await fetch('https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta', {
+              {codeLang === 'js' && `const response = await fetch('https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta', {
   headers: {
-    'Authorization': 'Bearer rs_live_key_993821',
+    'Authorization': 'Bearer rv_live_key_993821',
     'Accept': 'application/json'
   }
 });
 const data = await response.json();`}
               {codeLang === 'python' && `import requests
-url = "https://api.railsight.ir.gov.in/v1/trains/${trainIdParam}/eta"
-headers = {"Authorization": "Bearer rs_live_key_993821"}
+url = "https://api.railvue.ir.gov.in/v1/trains/${trainIdParam}/eta"
+headers = {"Authorization": "Bearer rv_live_key_993821"}
 response = requests.get(url, headers=headers)
 print(response.json())`}
             </pre>

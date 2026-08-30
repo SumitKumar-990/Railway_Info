@@ -10,9 +10,9 @@ export default function Header({ selectedTrain, onSelectTrain, trains }) {
         </div>
         <div>
           <h1 className="brand-title">
-            RailPulse <span>AI</span>
+            RailVue <span>AI</span>
           </h1>
-          <p className="brand-subtitle">AI-Powered Real-Time Train Intelligence</p>
+          <p className="brand-subtitle">Smarter ETA. Better Journeys.</p>
         </div>
       </div>
 
