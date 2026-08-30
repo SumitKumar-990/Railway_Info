@@ -21,6 +21,7 @@ __pycache__/
 # Large Datasets & Cache
 backend/data/raw/
 backend/data/processed/
+backend/data/cache/
 
 # Environment & IDE
 .env

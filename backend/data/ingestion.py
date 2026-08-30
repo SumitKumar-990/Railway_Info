@@ -199,6 +199,42 @@ def generate_realistic_historical_dataset(start_date='2026-08-01', end_date='202
                 prev_delay = current_delay
                 current_delay = max(0.0, current_delay + delay_added_on_leg)
 
+            # Add explicit terminal arrival row for completed state
+            st_terminal = stop_details[-1]
+            arr_m = st_terminal['arr_minutes'] if st_terminal['arr_minutes'] > 0 else (num_stops * 75)
+            term_sample_time = dt + timedelta(minutes=int(arr_m + current_delay))
+            all_journey_rows.append({
+                'sample_id': f'{journey_id}_TERM',
+                'journey_id': journey_id,
+                'timestamp': term_sample_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'train_id': train_num,
+                'train_number': train_num,
+                'train_name': train_name,
+                'zone': zone,
+                'current_station_code': st_terminal['code'],
+                'current_station_name': st_terminal['name'],
+                'next_station_code': 'TERM',
+                'next_station_name': 'Destination Terminated',
+                'latitude': float(st_terminal['lat']),
+                'longitude': float(st_terminal['lng']),
+                'current_delay_minutes': float(round(current_delay, 1)),
+                'previous_station_delay': float(round(prev_delay, 1)),
+                'current_speed_kmph': 0.0,
+                'distance_to_next_station_km': 0.0,
+                'distance_remaining_km': 0.0,
+                'scheduled_remaining_time_minutes': 0.0,
+                'weather_score': 0.0,
+                'rainfall_mm': 0.0,
+                'congestion_score': 0.0,
+                'speed_restriction_score': 0.0,
+                'signal_delay_score': 0.0,
+                'upcoming_station_count': 0,
+                'hour_of_day': int(term_sample_time.hour),
+                'day_of_week': int(term_sample_time.weekday()),
+                'month': int(term_sample_time.month),
+                'remaining_travel_time_minutes': 0.0
+            })
+
     df_result = pd.DataFrame(all_journey_rows)
     df_result = df_result.sort_values('timestamp').reset_index(drop=True)
     return df_result
