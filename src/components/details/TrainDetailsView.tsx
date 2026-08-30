@@ -26,13 +26,13 @@ export default function TrainDetailsView({ train, trains, onSelectTrain }: Train
   return (
     <div className="space-y-6">
       {/* TRAIN SELECTOR BAR */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Monitored Train:</span>
           <select
             value={train.id}
             onChange={e => onSelectTrain(e.target.value)}
-            className="bg-slate-50 border border-slate-200 font-bold text-sm text-slate-800 px-3 py-1.5 rounded-lg outline-none cursor-pointer"
+            className="bg-slate-50 border border-slate-200 font-bold text-xs sm:text-sm text-slate-800 px-3 py-1.5 rounded-lg outline-none cursor-pointer w-full sm:w-auto"
           >
             {trains.map(t => (
               <option key={t.id} value={t.id}>
@@ -41,7 +41,7 @@ export default function TrainDetailsView({ train, trains, onSelectTrain }: Train
             ))}
           </select>
         </div>
-        <div className="text-xs text-slate-500 font-mono">
+        <div className="text-[11px] sm:text-xs text-slate-500 font-mono">
           Train ID: <strong className="text-slate-800">{train.id}</strong> | Zone: <strong className="text-slate-800">{train.zone}</strong>
         </div>
       </div>
@@ -270,10 +270,10 @@ export default function TrainDetailsView({ train, trains, onSelectTrain }: Train
                   </div>
                 </div>
                 <div
-                  className={`font-mono font-bold text-xs px-2.5 py-1 rounded ${
+                  className={`whitespace-nowrap inline-flex items-center justify-center font-mono font-bold text-xs px-2.5 py-1 rounded border shadow-xs shrink-0 ${
                     factor.type === 'delay'
-                      ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   }`}
                 >
                   {factor.impactMinutes > 0 ? `+${factor.impactMinutes} min` : `${factor.impactMinutes} min`}

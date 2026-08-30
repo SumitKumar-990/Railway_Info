@@ -9,7 +9,6 @@ import NetworkIntelligenceView from './components/network/NetworkIntelligenceVie
 import DelayAnalyticsView from './components/analytics/DelayAnalyticsView';
 import TrainDetailsView from './components/details/TrainDetailsView';
 import AlertsEventsView from './components/alerts/AlertsEventsView';
-import ApiPlaygroundView from './components/api/ApiPlaygroundView';
 import LiveSimulationBar from './components/simulation/LiveSimulationBar';
 
 import { useLiveTrainData } from './hooks/useLiveTrainData';
@@ -18,6 +17,7 @@ import { NavPage } from './types';
 
 export default function App() {
   const [activePage, setActivePage] = useState<NavPage>('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const {
     trains,
@@ -34,15 +34,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans antialiased">
-      {/* 1. PERSISTENT LEFT SIDEBAR */}
+      {/* 1. PERSISTENT LEFT SIDEBAR (Desktop fixed / Mobile slide drawer) */}
       <Sidebar
         activePage={activePage}
         onPageChange={setActivePage}
         criticalAlertCount={criticalAlertCount}
+        mobileMenuOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
-      {/* MAIN CONTAINER (OFFSET BY SIDEBAR WIDTH W-64 = 16REM) */}
-      <div className="flex-1 ml-64 flex flex-col min-w-0">
+      {/* MAIN CONTAINER (OFFSET BY SIDEBAR WIDTH W-64 ONLY ON MD+ DESKTOP SCREENS) */}
+      <div className="flex-1 md:ml-64 flex flex-col min-w-0">
         {/* 2. TOP HEADER */}
         <Header
           activePage={activePage}
@@ -51,10 +53,11 @@ export default function App() {
           onSelectTrain={setSelectedTrainId}
           onNavigateToDetails={() => setActivePage('details')}
           lastUpdated={simulationState.lastTickTimestamp}
+          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
 
         {/* 3. DYNAMIC PAGE CONTENT VIEW */}
-        <main className="p-8 flex-1 max-w-7xl w-full mx-auto space-y-6">
+        <main className="p-3 sm:p-5 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-6">
           {activePage === 'overview' && (
             <OverviewDashboard
               trains={trains}
@@ -94,8 +97,6 @@ export default function App() {
           )}
 
           {activePage === 'alerts' && <AlertsEventsView />}
-
-          {activePage === 'api' && <ApiPlaygroundView />}
         </main>
       </div>
 

@@ -150,21 +150,21 @@ export default function EtaPredictionsView({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px] bg-slate-100">
-                <th className="py-3.5 px-4">Train</th>
-                <th className="py-3.5 px-4">Current Station</th>
-                <th className="py-3.5 px-4">Upcoming Station</th>
-                <th className="py-3.5 px-4">Scheduled Arrival</th>
-                <th className="py-3.5 px-4">Traditional ETA</th>
-                <th className="py-3.5 px-4 bg-emerald-50 text-emerald-900 font-black">AI Predicted ETA</th>
-                <th className="py-3.5 px-4">Difference</th>
-                <th className="py-3.5 px-4">Confidence</th>
-                <th className="py-3.5 px-4 text-right">Action</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Train</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Current Station</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Upcoming Station</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Scheduled Arrival</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Traditional ETA</th>
+                <th className="py-3.5 px-4 bg-emerald-50 text-emerald-900 font-black whitespace-nowrap">AI Predicted ETA</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Difference</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Confidence</th>
+                <th className="py-3.5 px-4 text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
               {trains.map(train => (
                 <tr key={train.id} className="hover:bg-slate-50 transition">
-                  <td className="py-4 px-4 font-bold text-slate-900">
+                  <td className="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <span className="font-mono bg-slate-900 text-white px-1.5 py-0.5 rounded text-[11px]">
                         {train.number}
@@ -172,36 +172,36 @@ export default function EtaPredictionsView({
                       <span>{train.name}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-slate-700 font-semibold">{train.currentLocation}</td>
-                  <td className="py-4 px-4 text-slate-600">{train.nextStation}</td>
-                  <td className="py-4 px-4 font-mono text-slate-500">{train.scheduledEta}</td>
-                  <td className="py-4 px-4 font-mono text-slate-600">{train.traditionalEta}</td>
+                  <td className="py-4 px-4 text-slate-700 font-semibold whitespace-nowrap">{train.currentLocation}</td>
+                  <td className="py-4 px-4 text-slate-600 whitespace-nowrap">{train.nextStation}</td>
+                  <td className="py-4 px-4 font-mono text-slate-500 whitespace-nowrap">{train.scheduledEta}</td>
+                  <td className="py-4 px-4 font-mono text-slate-600 whitespace-nowrap">{train.traditionalEta}</td>
 
                   {/* PROMINENT AI PREDICTED ETA */}
-                  <td className="py-4 px-4 bg-emerald-50/70 border-x border-emerald-100 font-mono font-black text-emerald-800 text-base">
+                  <td className="py-4 px-4 bg-emerald-50/70 border-x border-emerald-100 font-mono font-black text-emerald-800 text-base whitespace-nowrap">
                     {train.aiPredictedEta}
                   </td>
 
-                  <td className="py-4 px-4">
+                  <td className="py-4 px-4 whitespace-nowrap">
                     <span
-                      className={`font-mono font-bold px-2 py-0.5 rounded ${
+                      className={`whitespace-nowrap inline-flex items-center justify-center font-mono font-bold px-2.5 py-1 rounded-md text-xs leading-none border shadow-xs ${
                         train.delayMinutes === 0
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-amber-50 text-amber-700'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}
                     >
                       {train.delayMinutes === 0 ? '0 min' : `+${train.delayMinutes} min`}
                     </span>
                   </td>
 
-                  <td className="py-4 px-4 font-mono font-bold text-slate-800">
+                  <td className="py-4 px-4 font-mono font-bold text-slate-800 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
                       <span>{train.confidenceScore}%</span>
                     </div>
                   </td>
 
-                  <td className="py-4 px-4 text-right">
+                  <td className="py-4 px-4 text-right whitespace-nowrap">
                     <button
                       onClick={() => {
                         onSelectTrain(train.id);

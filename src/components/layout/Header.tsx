@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, Clock, Cpu, ChevronDown } from 'lucide-react';
+import { Search, Bell, Clock, Cpu, ChevronDown, Menu } from 'lucide-react';
 import { Train, NavPage } from '../../types';
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
   onSelectTrain: (trainId: string) => void;
   onNavigateToDetails: () => void;
   lastUpdated: string;
+  onToggleMobileMenu?: () => void;
 }
 
 export default function Header({
@@ -17,7 +18,8 @@ export default function Header({
   selectedTrain,
   onSelectTrain,
   onNavigateToDetails,
-  lastUpdated
+  lastUpdated,
+  onToggleMobileMenu
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -34,12 +36,21 @@ export default function Header({
     : [];
 
   return (
-    <header className="bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-20 px-8 py-4 shadow-xl flex items-center justify-between">
-      {/* Brand & Subtitle Header */}
-      <div className="flex items-center gap-4">
+    <header className="bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-30 px-3 sm:px-6 md:px-8 py-3 sm:py-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
+      {/* Brand & Subtitle Header + Mobile Hamburger */}
+      <div className="flex items-center gap-2.5 sm:gap-4">
+        {/* Mobile Hamburger Toggle */}
+        <button
+          onClick={onToggleMobileMenu}
+          className="md:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu className="w-5 h-5 text-cyan-400" />
+        </button>
+
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-extrabold text-white tracking-tight font-heading flex items-center gap-1.5">
+            <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight font-heading flex items-center gap-1.5">
               RailVue <span className="text-cyan-400">AI</span>
             </h1>
             <span className="text-xs text-slate-500 font-bold">•</span>
@@ -47,16 +58,16 @@ export default function Header({
               {activePage === 'details' ? 'Train Details' : activePage}
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
+          <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5 hidden xs:block">
             Smarter ETA. Better Journeys.
           </p>
         </div>
       </div>
 
       {/* Right Controls: Train Selector Dropdown + LIVE Badge */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3 ml-auto flex-wrap sm:flex-nowrap">
         {/* Global Train Search Dropdown */}
-        <div className="relative w-64">
+        <div className="relative w-40 sm:w-56 md:w-64">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input

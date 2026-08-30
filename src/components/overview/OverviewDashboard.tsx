@@ -71,12 +71,12 @@ export default function OverviewDashboard({ trains, selectedTrain, onSelectTrain
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <span>Current Delay:</span>
               <span
-                className={`font-mono font-bold px-2.5 py-1 rounded-lg text-xs ${
+                className={`whitespace-nowrap inline-flex items-center justify-center font-mono font-bold px-2.5 py-1 rounded-lg text-xs leading-none border shadow-xs ${
                   isCritical
-                    ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
                     : isDelayed
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                 }`}
               >
                 {train.delayMinutes === 0 ? 'On Time' : `+${train.delayMinutes} min`}
@@ -447,20 +447,20 @@ export default function OverviewDashboard({ trains, selectedTrain, onSelectTrain
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px] bg-slate-950/60">
-                <th className="py-3 px-4">Train Number & Name</th>
-                <th className="py-3 px-4">Current Location</th>
-                <th className="py-3 px-4">Next Station</th>
-                <th className="py-3 px-4">Speed</th>
-                <th className="py-3 px-4">Current Delay</th>
-                <th className="py-3 px-4">AI Predicted ETA</th>
-                <th className="py-3 px-4">Confidence</th>
-                <th className="py-3 px-4 text-right">Action</th>
+                <th className="py-3 px-4 whitespace-nowrap">Train Number & Name</th>
+                <th className="py-3 px-4 whitespace-nowrap">Current Location</th>
+                <th className="py-3 px-4 whitespace-nowrap">Next Station</th>
+                <th className="py-3 px-4 whitespace-nowrap">Speed</th>
+                <th className="py-3 px-4 whitespace-nowrap">Current Delay</th>
+                <th className="py-3 px-4 whitespace-nowrap">AI Predicted ETA</th>
+                <th className="py-3 px-4 whitespace-nowrap">Confidence</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-medium">
               {trains.slice(0, 5).map(t => (
                 <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4 font-bold text-white">
+                  <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <span className="font-mono bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[11px]">
                         {t.number}
@@ -468,27 +468,27 @@ export default function OverviewDashboard({ trains, selectedTrain, onSelectTrain
                       <span>{t.name}</span>
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-300">{t.currentLocation}</td>
-                  <td className="py-3.5 px-4 text-slate-400">{t.nextStation}</td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-cyan-400">{t.currentSpeed} km/h</td>
-                  <td className="py-3.5 px-4">
+                  <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">{t.currentLocation}</td>
+                  <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap">{t.nextStation}</td>
+                  <td className="py-3.5 px-4 font-mono font-bold text-cyan-400 whitespace-nowrap">{t.currentSpeed} km/h</td>
+                  <td className="py-3.5 px-4 whitespace-nowrap">
                     <span
-                      className={`font-mono font-bold px-2 py-0.5 rounded ${
+                      className={`whitespace-nowrap inline-flex items-center justify-center font-mono font-bold px-2.5 py-1 rounded-md text-xs leading-none border shadow-xs ${
                         t.delayMinutes === 0
-                          ? 'bg-emerald-500/10 text-emerald-400'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : t.delayMinutes > 30
-                          ? 'bg-rose-500/10 text-rose-400'
-                          : 'bg-amber-500/10 text-amber-400'
+                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                       }`}
                     >
                       {t.delayMinutes === 0 ? 'On Time' : `+${t.delayMinutes} min`}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-cyan-400 text-sm">
+                  <td className="py-3.5 px-4 font-mono font-bold text-cyan-400 text-sm whitespace-nowrap">
                     {t.aiPredictedEta}
                   </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">{t.confidenceScore}%</td>
-                  <td className="py-3.5 px-4 text-right">
+                  <td className="py-3.5 px-4 font-mono text-slate-300 whitespace-nowrap">{t.confidenceScore}%</td>
+                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
                     <button
                       onClick={() => {
                         onSelectTrain(t.id);
