@@ -20,9 +20,32 @@ export default function OverviewDashboard({ trains, selectedTrain, onSelectTrain
   const weatherText = train.delayMinutes > 25 ? 'Heavy Rain & Fog' : train.delayMinutes > 10 ? 'Light Rain' : 'Clear Sky';
   const trackStatusText = train.delayMinutes > 25 ? 'Signal Interlock Hold' : train.delayMinutes > 10 ? 'Moderate Congestion' : 'Clear Corridor';
 
-  // Calculate remaining time approximation
-  const remainingMins = Math.max(12, 50 + (train.delayMinutes - 18));
-  const remainingText = `${remainingMins} minutes remaining`;
+  // Calculate remaining time dynamically against the live clock
+  const remainingText = useMemo(() => {
+    if (train.status === 'completed' || train.aiPredictedEta === 'Arrived') {
+      return '0 min remaining (Arrived at Destination)';
+    }
+    if (train.status === 'not_started') {
+      return `Scheduled departure at ${train.scheduledEta}`;
+    }
+    if (!train.aiPredictedEta || !train.aiPredictedEta.includes(':')) {
+      return 'Calculating dynamic ETA...';
+    }
+    const now = new Date();
+    const [hStr, mStr] = train.aiPredictedEta.split(':');
+    const targetH = parseInt(hStr, 10);
+    const targetM = parseInt(mStr, 10);
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    let targetMins = targetH * 60 + targetM;
+    if (targetMins < nowMins) {
+      targetMins += 24 * 60; // next day arrival
+    }
+    const diff = targetMins - nowMins;
+    if (diff <= 1) return 'Arriving now';
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return h > 0 ? `${h} hr ${m} min remaining` : `${m} minutes remaining`;
+  }, [train.aiPredictedEta, train.status, train.scheduledEta]);
 
   // Circular gauge SVG calculations
   const confidence = train.confidenceScore || 89;
