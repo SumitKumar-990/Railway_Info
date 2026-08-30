@@ -8,7 +8,7 @@ export type NavPage =
   | 'alerts'
   | 'api';
 
-export type TrainStatus = 'on_time' | 'delayed' | 'critical' | 'approaching';
+export type TrainStatus = 'on_time' | 'delayed' | 'critical' | 'completed' | 'not_started';
 
 
 export interface StationStop {

@@ -153,6 +153,33 @@ async def get_train_eta_prediction(train_id: str):
     dist_rem = calculate_distance_remaining(train["total_distance_km"], train["distance_covered_km"])
     sched_rem_time = calculate_scheduled_remaining_time(dist_rem, 85.0)
 
+    is_arrived = (dist_rem <= 0) or (train["current_station"] == train["destination"]) or (train.get("status") == "completed")
+    if is_arrived:
+        now_iso = datetime.now().isoformat()
+        return {
+            "train_id": train["train_id"],
+            "train_name": train["train_name"],
+            "next_station": "Destination Arrived",
+            "predicted_eta": now_iso,
+            "predicted_eta_formatted": "Arrived",
+            "delay_minutes": 0,
+            "remaining_travel_time_minutes": 0.0,
+            "confidence": 1.0,
+            "status": "completed",
+            "last_updated": now_iso,
+            "eta_lower_bound": now_iso,
+            "eta_lower_bound_formatted": "Arrived",
+            "eta_upper_bound": now_iso,
+            "eta_upper_bound_formatted": "Arrived",
+            "prediction_interval_margin_minutes": 0.0,
+            "data_source_transparency": {
+                "is_live_gps": not train["is_estimated"],
+                "is_estimated": False,
+                "is_simulated": False,
+                "model_type": "Terminal Completion Logic"
+            }
+        }
+
     feature_dict = {
         "current_delay_minutes": train["current_delay_minutes"],
         "current_speed_kmph": train["speed"],

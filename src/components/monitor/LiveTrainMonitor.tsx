@@ -98,10 +98,12 @@ export default function LiveTrainMonitor({ trains, onSelectTrain, onNavigateToDe
             onChange={e => setSelectedStatus(e.target.value)}
             className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 px-2.5 sm:px-3 py-2 rounded-lg outline-none cursor-pointer"
           >
-            <option value="ALL">All Delay Statuses</option>
+            <option value="ALL">All Statuses</option>
             <option value="on_time">🟢 On Time</option>
             <option value="delayed">🟠 Moderate Delay</option>
             <option value="critical">🔴 Critical Delay</option>
+            <option value="completed">🏁 Arrived / Completed</option>
+            <option value="not_started">⚪ Scheduled</option>
           </select>
 
           {/* Filter Type */}
@@ -190,14 +192,16 @@ export default function LiveTrainMonitor({ trains, onSelectTrain, onNavigateToDe
                   <td className="py-4 px-4 whitespace-nowrap">
                     <span
                       className={`whitespace-nowrap inline-flex items-center justify-center font-mono font-bold px-2.5 py-1 rounded-md text-xs leading-none border shadow-xs ${
-                        train.delayMinutes === 0
+                        train.status === 'completed'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : train.delayMinutes === 0
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : train.delayMinutes > 30
                           ? 'bg-rose-50 text-rose-700 border-rose-200'
                           : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}
                     >
-                      {train.delayMinutes === 0 ? 'On Time' : `+${train.delayMinutes} min`}
+                      {train.status === 'completed' ? 'Arrived' : train.delayMinutes === 0 ? 'On Time' : `+${train.delayMinutes} min`}
                     </span>
                   </td>
                   <td className="py-4 px-4 font-mono font-bold text-emerald-700 text-sm whitespace-nowrap">
@@ -209,7 +213,11 @@ export default function LiveTrainMonitor({ trains, onSelectTrain, onNavigateToDe
                   <td className="py-4 px-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        train.status === 'on_time'
+                        train.status === 'completed'
+                          ? 'bg-blue-100 text-blue-800'
+                          : train.status === 'not_started'
+                          ? 'bg-slate-100 text-slate-700'
+                          : train.status === 'on_time'
                           ? 'bg-emerald-100 text-emerald-800'
                           : train.status === 'critical'
                           ? 'bg-rose-100 text-rose-800'
@@ -218,14 +226,18 @@ export default function LiveTrainMonitor({ trains, onSelectTrain, onNavigateToDe
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          train.status === 'on_time'
+                          train.status === 'completed'
+                            ? 'bg-blue-600'
+                            : train.status === 'not_started'
+                            ? 'bg-slate-400'
+                            : train.status === 'on_time'
                             ? 'bg-emerald-600'
                             : train.status === 'critical'
                             ? 'bg-rose-600'
                             : 'bg-amber-600'
                         }`}
                       ></span>
-                      {train.status.replace('_', ' ')}
+                      {train.status === 'completed' ? 'Arrived' : train.status === 'not_started' ? 'Scheduled' : train.status.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap">

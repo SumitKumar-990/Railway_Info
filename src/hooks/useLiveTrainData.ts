@@ -22,6 +22,52 @@ function computeDynamicTrainState(train: Train, sim: SimulationState): Train {
   const recDelta = sim.recovery ? -10 : 0;
   const netDelta = rainDelta + congDelta + sigDelta + recDelta;
 
+  const isCompleted = train.status === 'completed' ||
+    train.currentLocation === train.destination ||
+    (train.distanceCovered > 0 && train.totalDistance > 0 && train.distanceCovered >= train.totalDistance);
+
+  const isNotStarted = train.status === 'not_started' ||
+    (train.distanceCovered === 0 && train.currentLocation === train.origin && train.currentSpeed === 0);
+
+  if (isCompleted) {
+    const updatedTimeline: StationStop[] = (train.timeline || []).map(stop => ({
+      ...stop,
+      status: 'completed'
+    }));
+
+    return {
+      ...train,
+      status: 'completed',
+      currentSpeed: 0,
+      aiPredictedEta: 'Arrived',
+      delayMinutes: 0,
+      timeline: updatedTimeline,
+      delayFactors: [
+        {
+          id: 'f-arrived',
+          name: 'Journey Completed & Terminated',
+          category: 'recovery',
+          impactMinutes: 0,
+          type: 'gain',
+          icon: '🏁',
+          description: `Train arrived at final destination platform (${train.destination})`
+        }
+      ],
+      lastUpdated: 'Arrived at Destination'
+    } as any;
+  }
+
+  if (isNotStarted) {
+    return {
+      ...train,
+      status: 'not_started',
+      currentSpeed: 0,
+      aiPredictedEta: train.scheduledEta,
+      delayMinutes: 0,
+      lastUpdated: 'Scheduled Departure'
+    } as any;
+  }
+
   const baseDelay = (train as any)._baseDelay ?? train.delayMinutes;
   const baseSpeed = (train as any)._baseSpeed ?? train.currentSpeed;
   const newDelay = Math.max(0, baseDelay + netDelta);
@@ -29,7 +75,7 @@ function computeDynamicTrainState(train: Train, sim: SimulationState): Train {
   const speedDelta = (sim.rain ? -12 : 0) + (sim.congestion ? -20 : 0) + (sim.signal ? -35 : 0) + (sim.recovery ? 16 : 0);
   const newSpeed = Math.max(25, Math.min(train.maxSpeed, baseSpeed + speedDelta));
 
-  const newStatus = newDelay === 0 ? 'on_time' : newDelay > 25 ? 'critical' : 'delayed';
+  const newStatus: TrainStatus = newDelay === 0 ? 'on_time' : newDelay > 25 ? 'critical' : 'delayed';
   const newAiEta = addMinutesToTime(train.scheduledEta, newDelay);
 
   // Dynamic SHAP / factor breakdown

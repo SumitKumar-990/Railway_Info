@@ -79,7 +79,11 @@ export default function TrainDetailsView({ train, trains, onSelectTrain }: Train
 
           <span
             className={`px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 border shadow-lg ${
-              train.status === 'on_time'
+              train.status === 'completed'
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-blue-500/10'
+                : train.status === 'not_started'
+                ? 'bg-slate-500/20 text-slate-300 border-slate-500/40 shadow-slate-500/10'
+                : train.status === 'on_time'
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
                 : train.status === 'critical'
                 ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-rose-500/10'
@@ -88,10 +92,24 @@ export default function TrainDetailsView({ train, trains, onSelectTrain }: Train
           >
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                train.status === 'on_time' ? 'bg-emerald-400' : train.status === 'critical' ? 'bg-rose-400' : 'bg-amber-400'
+                train.status === 'completed'
+                  ? 'bg-blue-400'
+                  : train.status === 'not_started'
+                  ? 'bg-slate-400'
+                  : train.status === 'on_time'
+                  ? 'bg-emerald-400'
+                  : train.status === 'critical'
+                  ? 'bg-rose-400'
+                  : 'bg-amber-400'
               }`}
             ></span>
-            {train.delayMinutes === 0 ? 'On Time Schedule' : `Running ${train.delayMinutes} Minutes Late`}
+            {train.status === 'completed'
+              ? 'Arrived at Destination'
+              : train.status === 'not_started'
+              ? 'Scheduled Departure'
+              : train.delayMinutes === 0
+              ? 'On Time Schedule'
+              : `Running ${train.delayMinutes} Minutes Late`}
           </span>
         </div>
       </div>
