@@ -58,7 +58,7 @@ export default function EtaPredictionsView({
           <Cpu className="w-8 h-8 text-cyan-400" />
           <div>
             <div className="text-xs font-bold text-slate-300">Predictive Model</div>
-            <div className="text-sm font-black text-white font-mono">SpatioTemporal Graph Neural Network</div>
+            <div className="text-sm font-black text-white font-mono">Regularized XGBoost Delay Regressor</div>
           </div>
         </div>
       </div>

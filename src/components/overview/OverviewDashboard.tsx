@@ -349,102 +349,92 @@ export default function OverviewDashboard({ trains, selectedTrain, onSelectTrain
       </div>
 
       {/* ====================================================================
-         4. ROUTE TIMELINE (Horizontal Station Visualization)
+         4. ROUTE TIMELINE (Horizontal Connected Stepper)
          ==================================================================== */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl">
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-white font-heading">Route Timeline</h3>
-          <p className="text-xs text-slate-400">Station progression & predicted arrival sequence</p>
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+          <div>
+            <h3 className="text-lg font-bold text-white font-heading">Route Timeline</h3>
+            <p className="text-xs text-slate-400">Station progression & predicted arrival sequence</p>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 text-cyan-400 font-mono text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Completed / On-Track
+            </span>
+            <span className="flex items-center gap-1.5 text-slate-500 font-mono text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-slate-700"></span> Upcoming
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 relative">
-          {train.timeline && train.timeline.length > 0 ? (
-            train.timeline.map((stop, index) => {
-              const isCompleted = stop.status === 'completed';
-              const isActive = stop.status === 'current';
-              const isLast = index === train.timeline.length - 1;
+        {/* Scrollable Connected Stepper Track */}
+        <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-800 -mx-2 px-2">
+          <div className="flex items-start min-w-max py-2 justify-between">
+            {train.timeline && train.timeline.length > 0 ? (
+              train.timeline.map((stop, index) => {
+                const isCompleted = stop.status === 'completed';
+                const isActive = stop.status === 'current';
+                const isLast = index === train.timeline.length - 1;
+                const nextStop = !isLast ? train.timeline[index + 1] : null;
+                const isLineActive = isCompleted && (nextStop?.status === 'completed' || nextStop?.status === 'current');
 
-              return (
-                <div key={stop.id} className="flex flex-col items-center text-center relative">
-                  {!isLast && (
-                    <div
-                      className={`hidden md:block absolute top-4 left-1/2 w-full h-0.5 ${
-                        isCompleted ? 'bg-gradient-to-r from-blue-600 to-cyan-400' : 'bg-slate-800'
-                      }`}
-                    ></div>
-                  )}
+                return (
+                  <React.Fragment key={stop.id}>
+                    {/* Station Node */}
+                    <div className="flex flex-col items-center text-center min-w-[120px] max-w-[150px] shrink-0">
+                      <div
+                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center font-bold text-xs z-10 transition-all ${
+                          isActive
+                            ? 'bg-cyan-400 border-cyan-300 text-slate-950 shadow-lg shadow-cyan-400/40 scale-110'
+                            : isCompleted
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400'
+                            : 'bg-slate-900 border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <Check className="w-4 h-4" />
+                        ) : isActive ? (
+                          <TrainIcon className="w-4 h-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
 
-                  <div
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs z-10 transition-all ${
-                      isActive
-                        ? 'bg-cyan-400 border-cyan-300 text-slate-950 shadow-lg shadow-cyan-400/40 scale-110'
-                        : isCompleted
-                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400'
-                        : 'bg-slate-900 border-slate-700 text-slate-500'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="w-4 h-4" /> : index + 1}
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="text-sm font-bold text-white font-heading uppercase">{stop.stationName}</div>
-                    <div className="text-xs font-mono text-cyan-400 mt-0.5">
-                      ETA {stop.predictedArrival || train.aiPredictedEta}
+                      <div className="mt-3 px-1">
+                        <div className="text-xs font-bold text-white uppercase font-mono tracking-tight">
+                          {stop.stationCode || stop.stationName}
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-300 truncate max-w-[130px] mt-0.5" title={stop.stationName}>
+                          {stop.stationName}
+                        </div>
+                        <div className="text-[11px] font-mono text-cyan-400 mt-1 font-semibold">
+                          ETA {stop.predictedArrival || stop.scheduledArrival}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-semibold uppercase mt-0.5">
+                          {isCompleted ? 'Completed' : isActive ? 'LIVE STOP' : 'Scheduled'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-semibold uppercase mt-0.5">
-                      {isCompleted ? 'Completed' : isActive ? 'LIVE ETA' : 'Scheduled'}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <>
-              {/* Default Fallback Demo Route */}
-              <div className="flex flex-col items-center text-center relative">
-                <div className="hidden md:block absolute top-4 left-1/2 w-full h-0.5 bg-gradient-to-r from-blue-600 to-cyan-400"></div>
-                <div className="w-8 h-8 rounded-full bg-cyan-500/20 border-2 border-cyan-400 text-cyan-400 flex items-center justify-center font-bold text-xs z-10">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm font-bold text-white font-heading">KANPUR</div>
-                  <div className="text-xs text-slate-400">Completed</div>
-                </div>
-              </div>
 
-              <div className="flex flex-col items-center text-center relative">
-                <div className="hidden md:block absolute top-4 left-1/2 w-full h-0.5 bg-slate-800"></div>
-                <div className="w-8 h-8 rounded-full bg-cyan-400 border-2 border-cyan-300 text-slate-950 font-bold text-xs flex items-center justify-center z-10 shadow-lg shadow-cyan-400/40 scale-110">
-                  <TrainIcon className="w-4 h-4" />
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm font-bold text-white font-heading">PRAYAGRAJ</div>
-                  <div className="text-xs font-mono text-cyan-400 font-bold">ETA {train.aiPredictedEta}</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-center relative">
-                <div className="hidden md:block absolute top-4 left-1/2 w-full h-0.5 bg-slate-800"></div>
-                <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-slate-700 text-slate-500 flex items-center justify-center font-bold text-xs z-10">
-                  3
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm font-bold text-white font-heading">MUGHALSARAI</div>
-                  <div className="text-xs font-mono text-slate-400">ETA 20:42</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center text-center relative">
-                <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-slate-700 text-slate-500 flex items-center justify-center font-bold text-xs z-10">
-                  4
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm font-bold text-white font-heading">PATNA</div>
-                  <div className="text-xs font-mono text-slate-400">ETA 23:55</div>
-                </div>
-              </div>
-            </>
-          )}
+                    {/* Connecting Line Between Station Nodes (Never overflows container) */}
+                    {!isLast && (
+                      <div className="flex-1 min-w-[40px] sm:min-w-[60px] max-w-[140px] h-0.5 mt-4.5 shrink-0 self-start">
+                        <div
+                          className={`h-full w-full rounded-full ${
+                            isLineActive
+                              ? 'bg-gradient-to-r from-blue-600 to-cyan-400 shadow-xs shadow-cyan-400/20'
+                              : isCompleted
+                              ? 'bg-gradient-to-r from-cyan-400 to-slate-800'
+                              : 'bg-slate-800'
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })
+            ) : null}
+          </div>
         </div>
       </div>
 
