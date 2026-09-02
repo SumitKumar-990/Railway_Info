@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Train, PassengerDelayExplanation, StationStop } from '../../types';
 import { mockTrainService } from '../../services/mockTrainService';
+import { formatPassengerTime } from '../../utils/timeFormat';
 import LiveMapView from '../map/LiveMapView';
 import RailRadarTimeline from '../timeline/RailRadarTimeline';
 
@@ -356,7 +357,7 @@ export default function PassengerTrainTracker({
               <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Destination ETA
             </span>
             <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
-              {predictedDestinationEta}
+              {formatPassengerTime(predictedDestinationEta, false, journeyDate).formatted}
             </div>
             <div className="text-xs font-semibold text-slate-400">
               {runningStatus === 'ARRIVED' ? (
@@ -510,6 +511,7 @@ export default function PassengerTrainTracker({
         currentStationCode={liveData?.previous_station_code || liveData?.source_station_code || 'CURR'}
         selectedStation={selectedStation}
         onSelectStation={(st) => setSelectedStation(st)}
+        journeyDate={journeyDate}
       />
 
       {/* FLOATING "IN TRAIN?" BUTTON (Matching RailRadar UI Specs) */}
