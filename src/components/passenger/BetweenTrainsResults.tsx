@@ -10,6 +10,25 @@ interface BetweenTrainsResultsProps {
   onBackToSearch: () => void;
 }
 
+const STATION_NAMES: Record<string, string> = {
+  HWH: 'Howrah Jn',
+  RNC: 'Ranchi',
+  NDLS: 'New Delhi',
+  CNB: 'Kanpur Central',
+  PRYJ: 'Prayagraj Jn',
+  MMCT: 'Mumbai Central',
+  CSMT: 'Mumbai CSMT',
+  MAO: 'Madgaon (Goa)',
+  BSB: 'Varanasi Jn',
+  DDU: 'Pt DD Upadhyaya',
+  GAYA: 'Gaya Jn',
+  DGR: 'Durgapur',
+  DHN: 'Dhanbad Jn',
+  RKMP: 'Rani Kamlapati',
+  AGC: 'Agra Cantt',
+  SDAH: 'Sealdah'
+};
+
 export default function BetweenTrainsResults({
   fromCode,
   toCode,
@@ -40,6 +59,9 @@ export default function BetweenTrainsResults({
     };
   }, [fromCode, toCode]);
 
+  const fromLabel = STATION_NAMES[fromCode] ? `${STATION_NAMES[fromCode]} (${fromCode})` : fromCode;
+  const toLabel = STATION_NAMES[toCode] ? `${STATION_NAMES[toCode]} (${toCode})` : toCode;
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-4">
       {/* Navigation & Header */}
@@ -56,10 +78,10 @@ export default function BetweenTrainsResults({
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Search Route
           </span>
-          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-            <span>{fromCode}</span>
-            <ArrowRight className="w-4 h-4 text-blue-600" />
-            <span>{toCode}</span>
+          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 justify-end">
+            <span>{fromLabel}</span>
+            <ArrowRight className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>{toLabel}</span>
           </h2>
         </div>
       </div>
@@ -90,11 +112,11 @@ export default function BetweenTrainsResults({
           </div>
           <h4 className="text-base font-bold text-slate-800">No Direct Trains Found</h4>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            We couldn't find direct trains between {fromCode} and {toCode} for today's schedule.
+            We couldn't find direct trains between {fromLabel} and {toLabel} for today's schedule.
           </p>
           <button
             onClick={onBackToSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition"
           >
             Try Another Search
           </button>

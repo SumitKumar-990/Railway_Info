@@ -175,8 +175,19 @@ export class MockTrainService {
       { code: 'CNB', name: 'Kanpur Central', city: 'Kanpur' },
       { code: 'PRYJ', name: 'Prayagraj Junction', city: 'Prayagraj' },
       { code: 'MMCT', name: 'Mumbai Central', city: 'Mumbai' },
+      { code: 'CSMT', name: 'Chhatrapati Shivaji Maharaj Terminus', city: 'Mumbai' },
+      { code: 'MAO', name: 'Madgaon Junction (Goa)', city: 'Goa' },
+      { code: 'BSB', name: 'Varanasi Junction', city: 'Varanasi' },
+      { code: 'RKMP', name: 'Rani Kamlapati', city: 'Bhopal' },
+      { code: 'AGC', name: 'Agra Cantt', city: 'Agra' },
+      { code: 'DDU', name: 'Pt. Deen Dayal Upadhyaya', city: 'Mughalsarai' },
+      { code: 'GAYA', name: 'Gaya Junction', city: 'Gaya' },
+      { code: 'SDAH', name: 'Sealdah', city: 'Kolkata' },
       { code: 'DGR', name: 'Durgapur', city: 'Durgapur' },
-      { code: 'DHN', name: 'Dhanbad Junction', city: 'Dhanbad' }
+      { code: 'DHN', name: 'Dhanbad Junction', city: 'Dhanbad' },
+      { code: 'ST', name: 'Surat', city: 'Surat' },
+      { code: 'BRC', name: 'Vadodara Junction', city: 'Vadodara' },
+      { code: 'KOTA', name: 'Kota Junction', city: 'Kota' }
     ];
     return defaults.filter(s => s.code.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || (s.city && s.city.toLowerCase().includes(q)));
   }
@@ -185,17 +196,430 @@ export class MockTrainService {
   // 4. FIND TRAINS BETWEEN STATIONS
   // =========================================================================
   async getTrainsBetween(fromStation: string, toStation: string): Promise<BetweenTrainResult[]> {
+    const normalize = (s: string) => {
+      if (!s) return '';
+      const m = s.match(/\(([A-Za-z0-9]+)\)/);
+      if (m) return m[1].toUpperCase();
+      const clean = s.replace(/(junction|jn\.?|central|centr\.?|cantt\.?|terminus|terminal|term\.?|city)/gi, '').trim().toUpperCase();
+      const ALIASES: Record<string, string> = {
+        'MMCT': 'MMCT', 'BCT': 'MMCT', 'MUMBAI CENTRAL': 'MMCT', 'MUMBAI': 'CSMT',
+        'CSTM': 'CSMT', 'CSMT': 'CSMT',
+        'PRYJ': 'PRYJ', 'ALD': 'PRYJ', 'ALLAHABAD': 'PRYJ',
+        'DDU': 'DDU', 'MGS': 'DDU', 'MUGHALSARAI': 'DDU',
+        'RKMP': 'RKMP', 'HBJ': 'RKMP',
+        'DELHI': 'NDLS', 'NEW DELHI': 'NDLS',
+        'HOWRAH': 'HWH', 'RANCHI': 'RNC', 'KANPUR': 'CNB',
+        'VARANASI': 'BSB', 'BANARAS': 'BSB', 'GOA': 'MAO', 'MADGAON': 'MAO'
+      };
+      return ALIASES[clean] || ALIASES[s.toUpperCase()] || clean;
+    };
+
+    const fromKey = normalize(fromStation);
+    const toKey = normalize(toStation);
+
+    // 1. Try Backend API first
     try {
       const res = await fetch(`${API_BASE_URL}/trains/between?from=${encodeURIComponent(fromStation)}&to=${encodeURIComponent(toStation)}`);
       if (res.ok) {
         const data = await res.json();
-        return data.trains || [];
+        if (data.trains && data.trains.length > 0) {
+          return data.trains;
+        }
       }
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     } catch (e) {
-      console.error('[RailRadar API] fetch failed:', e);
+      console.warn('[RailRadar API] fetch failed, using client database:', e);
     }
-    return [];
+
+    // 2. Check active fleet trains in this.trains
+    const fleetMatches: BetweenTrainResult[] = [];
+    for (const t of this.trains) {
+      const stops = t.timeline || [];
+      const fromIdx = stops.findIndex(st => normalize(st.stationCode) === fromKey || normalize(st.stationName).includes(fromKey));
+      const toIdx = stops.findIndex(st => normalize(st.stationCode) === toKey || normalize(st.stationName).includes(toKey));
+
+      if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx) {
+        const stFrom = stops[fromIdx];
+        const stTo = stops[toIdx];
+        const dist = (stTo.distanceFromOrigin || t.totalDistance) - (stFrom.distanceFromOrigin || 0);
+        fleetMatches.push({
+          train_number: t.number,
+          train_name: t.name,
+          type: t.type,
+          zone: t.zone,
+          source_station_code: stFrom.stationCode,
+          source_station_name: stFrom.stationName,
+          destination_station_code: stTo.stationCode,
+          destination_station_name: stTo.stationName,
+          departure_time: stFrom.scheduledDeparture || stFrom.scheduledArrival || '08:00',
+          arrival_time: stTo.scheduledArrival || '16:00',
+          duration: `${Math.max(1, Math.round(dist / 65))}h 30m`,
+          total_distance_km: dist > 0 ? dist : t.totalDistance,
+          runs_on: ['Daily']
+        });
+      }
+    }
+
+    if (fleetMatches.length > 0) {
+      return fleetMatches;
+    }
+
+    // 3. Check Curated Route Database
+    const ROUTE_DATABASE: Record<string, BetweenTrainResult[]> = {
+      'HWH-RNC': [
+        {
+          train_number: '12019',
+          train_name: 'Howrah - Ranchi Shatabdi Express',
+          type: 'Shatabdi',
+          zone: 'ER',
+          source_station_code: 'HWH',
+          source_station_name: 'Howrah Jn.',
+          destination_station_code: 'RNC',
+          destination_station_name: 'Ranchi',
+          departure_time: '06:05',
+          arrival_time: '13:15',
+          duration: '7h 10m',
+          total_distance_km: 436,
+          runs_on: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        },
+        {
+          train_number: '18615',
+          train_name: 'Howrah - Hatia Kriya Yoga Express',
+          type: 'Express',
+          zone: 'SER',
+          source_station_code: 'HWH',
+          source_station_name: 'Howrah Jn.',
+          destination_station_code: 'RNC',
+          destination_station_name: 'Ranchi',
+          departure_time: '21:30',
+          arrival_time: '06:20',
+          duration: '8h 50m',
+          total_distance_km: 436,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '20898',
+          train_name: 'Ranchi - Howrah Vande Bharat Express',
+          type: 'Vande Bharat',
+          zone: 'SER',
+          source_station_code: 'HWH',
+          source_station_name: 'Howrah Jn.',
+          destination_station_code: 'RNC',
+          destination_station_name: 'Ranchi',
+          departure_time: '15:45',
+          arrival_time: '22:50',
+          duration: '7h 05m',
+          total_distance_km: 436,
+          runs_on: ['Daily except Tue']
+        }
+      ],
+      'RNC-HWH': [
+        {
+          train_number: '12020',
+          train_name: 'Ranchi - Howrah Shatabdi Express',
+          type: 'Shatabdi',
+          zone: 'ER',
+          source_station_code: 'RNC',
+          source_station_name: 'Ranchi',
+          destination_station_code: 'HWH',
+          destination_station_name: 'Howrah Jn.',
+          departure_time: '13:45',
+          arrival_time: '21:30',
+          duration: '7h 45m',
+          total_distance_km: 436,
+          runs_on: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        },
+        {
+          train_number: '20897',
+          train_name: 'Ranchi - Howrah Vande Bharat Express',
+          type: 'Vande Bharat',
+          zone: 'SER',
+          source_station_code: 'RNC',
+          source_station_name: 'Ranchi',
+          destination_station_code: 'HWH',
+          destination_station_name: 'Howrah Jn.',
+          departure_time: '05:15',
+          arrival_time: '12:20',
+          duration: '7h 05m',
+          total_distance_km: 436,
+          runs_on: ['Daily except Tue']
+        }
+      ],
+      'NDLS-CNB': [
+        {
+          train_number: '12004',
+          train_name: 'Lucknow Shatabdi Express',
+          type: 'Shatabdi',
+          zone: 'NR',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'CNB',
+          destination_station_name: 'Kanpur Central',
+          departure_time: '06:10',
+          arrival_time: '11:20',
+          duration: '5h 10m',
+          total_distance_km: 440,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '22436',
+          train_name: 'Vande Bharat Express',
+          type: 'Vande Bharat',
+          zone: 'NR',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'CNB',
+          destination_station_name: 'Kanpur Central',
+          departure_time: '06:00',
+          arrival_time: '10:08',
+          duration: '4h 08m',
+          total_distance_km: 440,
+          runs_on: ['Daily except Mon, Thu']
+        },
+        {
+          train_number: '12302',
+          train_name: 'Howrah Rajdhani Express',
+          type: 'Rajdhani',
+          zone: 'ER',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'CNB',
+          destination_station_name: 'Kanpur Central',
+          departure_time: '16:55',
+          arrival_time: '21:30',
+          duration: '4h 35m',
+          total_distance_km: 440,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '12418',
+          train_name: 'Prayagraj Express',
+          type: 'Superfast',
+          zone: 'NCR',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'CNB',
+          destination_station_name: 'Kanpur Central',
+          departure_time: '22:10',
+          arrival_time: '03:50',
+          duration: '5h 40m',
+          total_distance_km: 440,
+          runs_on: ['Daily']
+        }
+      ],
+      'CNB-NDLS': [
+        {
+          train_number: '12003',
+          train_name: 'New Delhi Shatabdi Express',
+          type: 'Shatabdi',
+          zone: 'NR',
+          source_station_code: 'CNB',
+          source_station_name: 'Kanpur Central',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '16:50',
+          arrival_time: '22:25',
+          duration: '5h 35m',
+          total_distance_km: 440,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '12301',
+          train_name: 'Howrah - New Delhi Rajdhani',
+          type: 'Rajdhani',
+          zone: 'ER',
+          source_station_code: 'CNB',
+          source_station_name: 'Kanpur Central',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '04:50',
+          arrival_time: '10:05',
+          duration: '5h 15m',
+          total_distance_km: 440,
+          runs_on: ['Daily']
+        }
+      ],
+      'MMCT-NDLS': [
+        {
+          train_number: '12951',
+          train_name: 'Mumbai Rajdhani Express',
+          type: 'Rajdhani',
+          zone: 'WR',
+          source_station_code: 'MMCT',
+          source_station_name: 'Mumbai Central',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '17:00',
+          arrival_time: '08:32',
+          duration: '15h 32m',
+          total_distance_km: 1386,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '12953',
+          train_name: 'August Kranti Tejas Rajdhani',
+          type: 'Rajdhani',
+          zone: 'WR',
+          source_station_code: 'MMCT',
+          source_station_name: 'Mumbai Central',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '17:10',
+          arrival_time: '09:43',
+          duration: '16h 33m',
+          total_distance_km: 1378,
+          runs_on: ['Daily']
+        }
+      ],
+      'NDLS-BSB': [
+        {
+          train_number: '22436',
+          train_name: 'Vande Bharat Express',
+          type: 'Vande Bharat',
+          zone: 'NR',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'BSB',
+          destination_station_name: 'Varanasi Junction',
+          departure_time: '06:00',
+          arrival_time: '14:00',
+          duration: '8h 00m',
+          total_distance_km: 759,
+          runs_on: ['Daily except Mon, Thu']
+        },
+        {
+          train_number: '12560',
+          train_name: 'Shiv Ganga Express',
+          type: 'Superfast',
+          zone: 'NER',
+          source_station_code: 'NDLS',
+          source_station_name: 'New Delhi',
+          destination_station_code: 'BSB',
+          destination_station_name: 'Varanasi Junction',
+          departure_time: '20:05',
+          arrival_time: '06:10',
+          duration: '10h 05m',
+          total_distance_km: 757,
+          runs_on: ['Daily']
+        }
+      ],
+      'CSMT-MAO': [
+        {
+          train_number: '10103',
+          train_name: 'Mandovi Express',
+          type: 'Express',
+          zone: 'KR',
+          source_station_code: 'CSMT',
+          source_station_name: 'Mumbai CSMT',
+          destination_station_code: 'MAO',
+          destination_station_name: 'Madgaon Junction',
+          departure_time: '07:10',
+          arrival_time: '19:10',
+          duration: '12h 00m',
+          total_distance_km: 580,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '22229',
+          train_name: 'Mumbai Goa Vande Bharat',
+          type: 'Vande Bharat',
+          zone: 'CR',
+          source_station_code: 'CSMT',
+          source_station_name: 'Mumbai CSMT',
+          destination_station_code: 'MAO',
+          destination_station_name: 'Madgaon Junction',
+          departure_time: '05:25',
+          arrival_time: '13:10',
+          duration: '7h 45m',
+          total_distance_km: 580,
+          runs_on: ['Daily except Fri']
+        }
+      ],
+      'HWH-NDLS': [
+        {
+          train_number: '12301',
+          train_name: 'Howrah Rajdhani Express',
+          type: 'Rajdhani',
+          zone: 'ER',
+          source_station_code: 'HWH',
+          source_station_name: 'Howrah Jn.',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '16:55',
+          arrival_time: '10:05',
+          duration: '17h 10m',
+          total_distance_km: 1447,
+          runs_on: ['Daily']
+        },
+        {
+          train_number: '12305',
+          train_name: 'Poorva Express',
+          type: 'Superfast',
+          zone: 'ER',
+          source_station_code: 'HWH',
+          source_station_name: 'Howrah Jn.',
+          destination_station_code: 'NDLS',
+          destination_station_name: 'New Delhi',
+          departure_time: '08:00',
+          arrival_time: '06:05',
+          duration: '22h 05m',
+          total_distance_km: 1530,
+          runs_on: ['Sun', 'Wed', 'Thu']
+        }
+      ]
+    };
+
+    const routeKey = `${fromKey}-${toKey}`;
+    if (ROUTE_DATABASE[routeKey]) {
+      return ROUTE_DATABASE[routeKey];
+    }
+
+    // Also check reverse if applicable
+    const revKey = `${toKey}-${fromKey}`;
+    if (ROUTE_DATABASE[revKey]) {
+      return ROUTE_DATABASE[revKey].map(t => ({
+        ...t,
+        train_number: String(Number(t.train_number) + 1),
+        train_name: `${t.destination_station_name} - ${t.source_station_name} Express`,
+        source_station_code: t.destination_station_code,
+        source_station_name: t.destination_station_name,
+        destination_station_code: t.source_station_code,
+        destination_station_name: t.source_station_name,
+      }));
+    }
+
+    // 4. Fallback: Synthesize connected express trains between selected stations
+    return [
+      {
+        train_number: '12401',
+        train_name: `${fromKey} - ${toKey} Superfast Express`,
+        type: 'Superfast Express',
+        zone: 'IR',
+        source_station_code: fromKey || 'SRC',
+        source_station_name: fromStation || 'Origin Station',
+        destination_station_code: toKey || 'DST',
+        destination_station_name: toStation || 'Destination Station',
+        departure_time: '06:30',
+        arrival_time: '14:45',
+        duration: '8h 15m',
+        total_distance_km: 480,
+        runs_on: ['Daily']
+      },
+      {
+        train_number: '20815',
+        train_name: `${fromKey} - ${toKey} Vande Bharat Express`,
+        type: 'Vande Bharat',
+        zone: 'IR',
+        source_station_code: fromKey || 'SRC',
+        source_station_name: fromStation || 'Origin Station',
+        destination_station_code: toKey || 'DST',
+        destination_station_name: toStation || 'Destination Station',
+        departure_time: '14:20',
+        arrival_time: '21:05',
+        duration: '6h 45m',
+        total_distance_km: 480,
+        runs_on: ['Daily except Wed']
+      }
+    ];
   }
 
   // =========================================================================

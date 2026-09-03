@@ -108,7 +108,14 @@ async def get_trains_between(
     Endpoint: GET /api/trains/between?from=HWH&to=RNC
     """
     db_results = train_directory_db.get_trains_between(from_station, to_station, limit=30)
-    rr_results = railradar_client.get_trains_between_stations(from_station, to_station)
+    
+    # Resolve clean codes for external RailRadar client call
+    resolved_from = train_directory_db.resolve_station_codes(from_station)
+    resolved_to = train_directory_db.resolve_station_codes(to_station)
+    from_code = resolved_from[0] if resolved_from else from_station.strip().upper()
+    to_code = resolved_to[0] if resolved_to else to_station.strip().upper()
+    
+    rr_results = railradar_client.get_trains_between_stations(from_code, to_code)
     
     seen = set()
     combined = []
@@ -119,8 +126,8 @@ async def get_trains_between(
             combined.append(t)
 
     return {
-        "from": from_station.upper(),
-        "to": to_station.upper(),
+        "from": from_code,
+        "to": to_code,
         "count": len(combined),
         "trains": combined
     }

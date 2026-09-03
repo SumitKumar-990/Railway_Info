@@ -80,6 +80,32 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
     return () => clearTimeout(timer);
   }, [toQuery]);
 
+  const resolveInputCode = (text: string, currentCode: string): string => {
+    if (currentCode && currentCode.length <= 5) return currentCode.toUpperCase();
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+    const m = trimmed.match(/\(([A-Za-z0-9]+)\)/);
+    if (m) return m[1].toUpperCase();
+    if (trimmed.length <= 5 && /^[A-Za-z0-9]+$/.test(trimmed)) {
+      return trimmed.toUpperCase();
+    }
+    const upper = trimmed.toUpperCase();
+    if (upper.includes('HOWRAH')) return 'HWH';
+    if (upper.includes('RANCHI')) return 'RNC';
+    if (upper.includes('DELHI')) return 'NDLS';
+    if (upper.includes('KANPUR')) return 'CNB';
+    if (upper.includes('MUMBAI') || upper.includes('BOMBAY')) return 'MMCT';
+    if (upper.includes('VARANASI') || upper.includes('BANARAS')) return 'BSB';
+    if (upper.includes('PRAYAGRAJ') || upper.includes('ALLAHABAD')) return 'PRYJ';
+    if (upper.includes('GOA') || upper.includes('MADGAON')) return 'MAO';
+    if (upper.includes('DURGAPUR')) return 'DGR';
+    if (upper.includes('DHANBAD')) return 'DHN';
+    if (upper.includes('BHOPAL')) return 'RKMP';
+    if (upper.includes('AGRA')) return 'AGC';
+    if (upper.includes('SEALDAH')) return 'SDAH';
+    return trimmed.substring(0, 4).toUpperCase();
+  };
+
   const handleSelectFrom = (st: StationItem) => {
     setFromQuery(`${st.name} (${st.code})`);
     setFromCode(st.code);
@@ -94,8 +120,8 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
 
   const handleFindSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const src = fromCode || fromQuery.trim().toUpperCase().substring(0, 4) || 'HWH';
-    const dst = toCode || toQuery.trim().toUpperCase().substring(0, 4) || 'RNC';
+    const src = resolveInputCode(fromQuery, fromCode) || 'HWH';
+    const dst = resolveInputCode(toQuery, toCode) || 'RNC';
     onSearchBetween(src, dst);
   };
 
@@ -272,8 +298,17 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                     value={fromQuery}
                     onFocus={() => setShowFromDropdown(true)}
                     onChange={(e) => {
-                      setFromQuery(e.target.value);
+                      const val = e.target.value;
+                      setFromQuery(val);
                       setShowFromDropdown(true);
+                      const m = val.match(/\(([A-Za-z0-9]+)\)/);
+                      if (m) {
+                        setFromCode(m[1].toUpperCase());
+                      } else if (val.trim().length <= 5 && /^[A-Za-z0-9]+$/.test(val.trim())) {
+                        setFromCode(val.trim().toUpperCase());
+                      } else {
+                        setFromCode('');
+                      }
                     }}
                     placeholder="Enter source station (e.g. HWH, Howrah)"
                     className="w-full pl-11 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
@@ -326,8 +361,17 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                     value={toQuery}
                     onFocus={() => setShowToDropdown(true)}
                     onChange={(e) => {
-                      setToQuery(e.target.value);
+                      const val = e.target.value;
+                      setToQuery(val);
                       setShowToDropdown(true);
+                      const m = val.match(/\(([A-Za-z0-9]+)\)/);
+                      if (m) {
+                        setToCode(m[1].toUpperCase());
+                      } else if (val.trim().length <= 5 && /^[A-Za-z0-9]+$/.test(val.trim())) {
+                        setToCode(val.trim().toUpperCase());
+                      } else {
+                        setToCode('');
+                      }
                     }}
                     placeholder="Enter destination station (e.g. RNC, Ranchi)"
                     className="w-full pl-11 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
@@ -364,6 +408,33 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
               <Search className="w-4 h-4" />
               <span>Find Trains on Route</span>
             </button>
+
+            {/* Popular Route Shortcuts */}
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="font-semibold text-slate-500">Popular Routes:</span>
+              {[
+                { label: 'Howrah ⇄ Ranchi', fromName: 'Howrah Junction (HWH)', fromCode: 'HWH', toName: 'Ranchi Junction (RNC)', toCode: 'RNC' },
+                { label: 'New Delhi ⇄ Kanpur', fromName: 'New Delhi (NDLS)', fromCode: 'NDLS', toName: 'Kanpur Central (CNB)', toCode: 'CNB' },
+                { label: 'Mumbai ⇄ New Delhi', fromName: 'Mumbai Central (MMCT)', fromCode: 'MMCT', toName: 'New Delhi (NDLS)', toCode: 'NDLS' },
+                { label: 'New Delhi ⇄ Varanasi', fromName: 'New Delhi (NDLS)', fromCode: 'NDLS', toName: 'Varanasi Junction (BSB)', toCode: 'BSB' },
+                { label: 'Mumbai ⇄ Goa (MAO)', fromName: 'Mumbai CSMT (CSMT)', fromCode: 'CSMT', toName: 'Madgaon Goa (MAO)', toCode: 'MAO' }
+              ].map((route) => (
+                <button
+                  key={route.label}
+                  type="button"
+                  onClick={() => {
+                    setFromQuery(route.fromName);
+                    setFromCode(route.fromCode);
+                    setToQuery(route.toName);
+                    setToCode(route.toCode);
+                    onSearchBetween(route.fromCode, route.toCode);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition border border-blue-200/60"
+                >
+                  {route.label}
+                </button>
+              ))}
+            </div>
           </form>
         )}
       </div>
