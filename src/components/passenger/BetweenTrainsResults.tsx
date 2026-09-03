@@ -93,7 +93,7 @@ export default function BetweenTrainsResults({
             Direct & Connected Trains ({trains.length})
           </h3>
           <p className="text-xs text-slate-500">
-            Click any train to view live position, station stops, and RailSight AI ETA.
+            Click any train to view live position, station stops, and RailVue AI ETA.
           </p>
         </div>
       </div>

@@ -12,7 +12,7 @@ def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
 
 class LiveLocationEngine:
     """
-    Dedicated Live Location & Segment Detection Engine for RailSight AI.
+    Dedicated Live Location & Segment Detection Engine for RailVue AI.
     Converts telemetry (lat/lng or station code or distance) into:
     - Previous station
     - Current segment (e.g. Thane -> Panvel)

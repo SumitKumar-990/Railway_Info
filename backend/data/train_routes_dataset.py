@@ -1,7 +1,7 @@
 from typing import Dict, List, Any, Optional
 
 """
-RailSight AI - Dataset-Driven Ordered Train Routes Master Catalog
+RailVue AI - Dataset-Driven Ordered Train Routes Master Catalog
 Stores deterministic ordered routes for all supported dataset trains.
 Every station has a strict sequence number (1..N), station code, station name, distance from source (km), and scheduled timetable arrival/departure times.
 """

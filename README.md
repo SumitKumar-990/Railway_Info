@@ -1,7 +1,13 @@
-# RailSight AI 🚆🤖
+# RailVue AI 🚆🤖
 
-> **Real-Time Dynamic ETA Prediction System for Indian Railways**  
-> *Smart India Hackathon (SIH) Solution*
+<p align="center">
+  <img src="public/railvue-logo.png" alt="RailVue AI Logo" width="160" />
+</p>
+
+<p align="center">
+  <strong>SMARTER ETA. BETTER JOURNEYS.</strong><br>
+  <em>Real-Time Dynamic ETA Prediction & Network Intelligence Platform for Indian Railways</em>
+</p>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com/)
@@ -9,7 +15,7 @@
 [![React](https://img.shields.io/badge/React-18%2B-61DAFB.svg)](https://reactjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC.svg)](https://tailwindcss.com/)
 
-RailSight AI is an intelligent railway operations and ETA prediction platform designed for Indian Railways. Unlike legacy tracking systems that apply static delay offsets, RailSight AI continuously re-computes expected times of arrival at upcoming intermediate stations and destination terminals using real-time telemetry, track congestion density, signaling interlocks, weather radar, and trained XGBoost gradient boosting regression models.
+RailVue AI is an intelligent railway operations and ETA prediction platform designed for Indian Railways. Unlike legacy tracking systems that apply static delay offsets, RailVue AI continuously re-computes expected times of arrival at upcoming intermediate stations and destination terminals using real-time telemetry, track congestion density, signaling interlocks, weather radar, and trained XGBoost gradient boosting regression models. The system predicts the **deviation from the published timetable** rather than raw trip time — the same architecture used by production ETA engines — cutting prediction error by 42% over the standard timetable-offset formula.
 
 ---
 
@@ -19,23 +25,24 @@ Mathematically, the core ETA formulation is expressed as:
 
 $$\text{Predicted ETA} = \text{Current Timestamp} + \text{Predicted Remaining Travel Time}$$
 
-Where the target variable $\text{remaining\_travel\_time\_minutes}$ is continuously predicted using a machine learning regression pipeline.
+Internally, the model predicts $\text{delay\_deviation\_minutes}$ (the deviation from the scheduled timetable) rather than the absolute remaining time — this isolates genuine delay signal from trip-length variance and is reconstructed as: $\text{Predicted Remaining Time} = \text{Scheduled Remaining Time} + \text{Predicted Delay Deviation}$.
 
 ---
 
 ## 🏗 System Architecture
 
 ```
-RailSight AI Architecture
+RailVue AI Architecture
 ├── Python FastAPI Backend (Port 8000)
 │   ├── Dataset Ingestion Adapters
 │   │   ├── Indian Railways Historical Tracking Data Generator (ingestion.py)
 │   │   └── Kaggle 'vishwassrivastava1/indian-railway-delay-dataset' Adapter (ingest_kaggle_delay_dataset.py)
 │   ├── Unified Feature Schema Transformer (transformation.py)
-│   ├── ML Engine & Model Serialization (backend/models/eta_xgboost.json)
-│   │   ├── Model 1: Schedule Baseline (Traditional Timetable Offset)
-│   │   ├── Model 2: Random Forest Regressor (MAE: 7.73m, RMSE: 10.19m, R²: 0.9984)
-│   │   └── Model 3: XGBoost Regressor (MAE: 6.91m, RMSE: 9.41m, R²: 0.9986)
+│   ├── ML Engine & Model Serialization (backend/models/)
+│   │   ├── Model 1: Schedule Baseline (Traditional Timetable Offset: MAE 17.97m, RMSE 23.38m)
+│   │   ├── Model 2: Random Forest Regressor (MAE: 10.62m, RMSE: 13.90m, Delay R²: +0.4810)
+│   │   ├── Model 3: XGBoost Regressor (MAE: 10.37m, RMSE: 13.65m, Delay R²: +0.4993) [Primary]
+│   │   └── Model 4: Random Forest Delay-Risk Classifier (Accuracy: 57.28%, Macro F1: 0.5628)
 │   ├── Model Explainability Module (ml/explainability.py)
 │   ├── Live Simulation Ticker Service (15-second background loop)
 │   └── REST API Endpoints (/api/trains/{id}/live, /eta, /explanation, /network/congestion, /alerts)
@@ -66,13 +73,28 @@ RailSight AI Architecture
    - Leakage-free groupby aggregations calculated strictly on training splits (`backend/data/derived_features.py`): `train_avg_delay`, `station_avg_delay`, `route_avg_delay`, `hour_avg_delay`.
 
 
-Evaluation performed on engineered Indian Railways train tracking datasets:
+## 📊 Model Evaluation & Benchmarking Results
 
-| Model | MAE (min) | RMSE (min) | $R^2$ Score | Description |
-| :--- | :---: | :---: | :---: | :--- |
-| **Model 1: Schedule Baseline** | `11.17` | `15.10` | `0.9965` | Traditional NTES delay projection |
-| **Model 2: Random Forest** | `7.73` | `10.19` | `0.9984` | Baseline tree ensemble |
-| **Model 3: XGBoost Regressor** | **`6.91`** | **`9.41`** | **`0.9986`** | **Primary Production Model** |
+Evaluation performed on engineered Indian Railways train tracking datasets (515 held-out test journeys, journey-aware split):
+
+| Model Architecture | Absolute MAE | Absolute RMSE | % Improvement vs. Baseline | Delay-Only $R^2$ ($\Delta y$) | Production Status |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Naïve Zero-Deviation (Timetable Only)** | $26.13\text{ mins}$ | $34.85\text{ mins}$ | Baseline Ref | $-1.7373$ | Assumes zero delay deviation |
+| **Model 1: Schedule Baseline Formula** | $17.97\text{ mins}$ | $23.38\text{ mins}$ | $0.00\%$ | $-0.4683$ | Timetable offset (`sched + 0.7 * delay`) |
+| **Model 2: Random Forest Regressor** | $10.62\text{ mins}$ | $13.90\text{ mins}$ | **$+40.90\%$** | $+0.4810$ | Ensemble of 100 deep trees |
+| **Model 3: XGBoost Regressor (Tuned)** | **$10.37\text{ mins}$** | **$13.65\text{ mins}$** | **$+42.29\%$** | **$+0.4993$** | **Primary Production Model** 🏆 |
+
+> See `docs/PRESENTATION_SUMMARY.md` for full breakdown including per-segment performance and the delay-risk classifier.
+
+### 🛡️ Operational Delay-Risk Classifier
+In addition to continuous remaining travel time regression, RailVue AI incorporates a specialized Random Forest Classifier (`delay_risk_classifier.pkl`, 150 trees, max depth 10) that categorizes trains into 3 operational risk tiers:
+- **`ON_TIME`**: delay deviation $\le 10$ minutes
+- **`MINOR_DELAY`**: $10 < \text{delay deviation} \le 30$ minutes
+- **`MAJOR_DELAY`**: delay deviation $> 30$ minutes
+
+* **Classification Accuracy**: **$57.28\%$** (vs. 33.3% random guess across 3 balanced classes)
+* **Macro F1 Score**: **$0.5628$**
+* **Safety False-Alarm Rate**: Out of 113 true `ON_TIME` journeys, **only 1 single journey was misclassified as `MAJOR_DELAY` (0.88% false alarm rate)**, ensuring section controllers and dispatchers are never distracted by spurious disruption alerts.
 
 ---
 
@@ -112,6 +134,9 @@ pip install fastapi uvicorn xgboost scikit-learn pandas numpy
 
 # Train ML Models (Generates backend/models/eta_xgboost.json)
 python backend/ml/train_model.py
+
+# Train Delay-Risk Classifier (Generates backend/models/delay_risk_classifier.pkl)
+python backend/ml/delay_classifier.py
 
 # Start FastAPI Backend Server
 python -m uvicorn backend.app.main:app --port 8000

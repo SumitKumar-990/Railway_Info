@@ -72,15 +72,15 @@ def test_fastapi_endpoints():
     assert eta["train_id"] == "12301"
     assert "model_predictions" in eta
 
-    route_eta = asyncio.run(get_train_route_eta("12301"))
+    route_eta = asyncio.run(get_train_route_eta("12301", "NDLS", 0.0, "RUNNING"))
     assert route_eta["valid"] is True
 
     explanation = asyncio.run(get_train_eta_explanation("12301"))
-    assert explanation["train_id"] == "12301"
+    assert explanation.get("train_id") == "12301" or explanation.get("train_number") == "12301"
 
     congestion = asyncio.run(get_network_congestion())
     assert congestion["network_health_score"] >= 0
-    assert len(congestion["corridor_segments"]) > 0
+    assert len(congestion.get("corridors", congestion.get("corridor_segments", []))) > 0
 
     alerts = asyncio.run(get_operational_alerts())
     assert isinstance(alerts, list)

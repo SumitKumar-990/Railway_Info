@@ -5,14 +5,16 @@ export default function Header({ selectedTrain, onSelectTrain, trains }) {
   return (
     <header className="top-header">
       <div className="brand-section">
-        <div className="brand-logo-icon">
-          <Cpu size={24} />
-        </div>
+        <img 
+          src="/railvue-logo.png" 
+          alt="RailVue AI Logo" 
+          style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'contain', background: '#ffffff', padding: 2 }} 
+        />
         <div>
           <h1 className="brand-title">
-            RailPulse <span>AI</span>
+            RailVue <span>AI</span>
           </h1>
-          <p className="brand-subtitle">AI-Powered Real-Time Train Intelligence</p>
+          <p className="brand-subtitle">Smarter ETA. Better journeys.</p>
         </div>
       </div>
 

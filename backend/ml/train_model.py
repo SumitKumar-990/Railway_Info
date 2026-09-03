@@ -14,14 +14,18 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import xgboost as xgb
 
-from ml.dataset_builder import dataset_builder, FEATURE_COLUMNS, TARGET_COLUMN
+from ml.dataset_builder import dataset_builder, FEATURE_COLUMNS, TARGET_COLUMN, MODEL_TARGET_COLUMN
 from data.dataset_metadata import get_dataset_metadata
 
 def generate_model_evaluation_doc(
     split_info: dict,
     mae_base: float, rmse_base: float, r2_base: float,
     mae_rf: float, rmse_rf: float, r2_rf: float,
-    mae_xgb: float, rmse_xgb: float, r2_xgb: float
+    mae_xgb: float, rmse_xgb: float, r2_xgb: float,
+    mae_rf_delay: float = 0.0, r2_rf_delay: float = 0.0,
+    mae_xgb_delay: float = 0.0, r2_xgb_delay: float = 0.0,
+    mae_base_delay: float = 0.0, r2_base_delay: float = 0.0,
+    mae_zero_delay: float = 0.0, r2_zero_delay: float = 0.0
 ):
     """
     Generates docs/model_evaluation.md documenting model results, metrics, and leakage audit.
@@ -29,7 +33,7 @@ def generate_model_evaluation_doc(
     doc_path = os.path.join(backend_dir, "..", "docs", "model_evaluation.md")
     os.makedirs(os.path.dirname(doc_path), exist_ok=True)
 
-    content = f"""# RailSight AI - Model Evaluation & Leakage Audit Report
+    content = f"""# RailVue AI - Model Evaluation & Leakage Audit Report
 
 > **Notice**: Validated on the current engineered prototype dataset.
 
@@ -40,21 +44,32 @@ def generate_model_evaluation_doc(
 * **Training Journeys Count**: {split_info['train_journeys_count']} journeys ({split_info['train_samples_count']} snapshot samples)
 * **Testing Journeys Count**: {split_info['test_journeys_count']} journeys ({split_info['test_samples_count']} snapshot samples)
 * **Split Strategy**: `{split_info['split_strategy']}` (No snapshot rows from the same journey appear in both train and test splits)
-* **Target Definition**: `{TARGET_COLUMN}` (Actual remaining journey travel time in minutes from prediction timestamp $t$)
+* **Target Definition**: `{MODEL_TARGET_COLUMN}` (Delay deviation from timetable: `remaining_travel_time_minutes - scheduled_remaining_time_minutes`). At serving time, absolute ETA is reconstructed via: `predicted_absolute_minutes = predicted_delay_minutes + scheduled_remaining_time_minutes`.
 
 ---
 
 ## 2. Model Performance & Comparative Benchmark
 
+### 2A. Reconstructed Absolute ETA Benchmark (Headline Metrics)
 | Model | MAE (Average ETA Error) | RMSE | R² Score | Performance Rank | Saved Artifact |
 | :--- | ---: | ---: | ---: | :--- | :--- |
 | **Model 1: Schedule Baseline** | **{mae_base:.2f} mins** | {rmse_base:.2f} mins | {r2_base:.4f} | Deterministic Baseline | Timetable Formula |
-| **Model 2: Random Forest Regressor** | **{mae_rf:.2f} mins** | {rmse_rf:.2f} mins | {r2_rf:.4f} | Machine Learning Baseline | `eta_random_forest.pkl` |
-| **Model 3: XGBoost Regressor (Primary)** | **{mae_xgb:.2f} mins** | {rmse_xgb:.2f} mins | {r2_xgb:.4f} | **Primary Production Model** | `eta_xgboost.json` |
+| **Model 2: Random Forest Regressor** | **{mae_rf:.2f} mins** | {rmse_rf:.2f} mins | {r2_rf:.4f} | {"**Primary Production Model**" if mae_rf < mae_xgb else "Machine Learning Baseline"} | `eta_random_forest.pkl` |
+| **Model 3: XGBoost Regressor** | **{mae_xgb:.2f} mins** | {rmse_xgb:.2f} mins | {r2_xgb:.4f} | {"**Primary Production Model**" if mae_xgb <= mae_rf else "Machine Learning Baseline"} | `eta_xgboost.json` |
+
+### 2B. Pure Delay Skill Benchmark (Un-Reconstructed Deviation Delta)
+*Evaluates the model's ability to forecast delay disruptions without variance distortion from trip duration:*
+
+| Model | Delay-Only MAE | Delay-Only R² | Description |
+| :--- | ---: | ---: | :--- |
+| **Naïve Zero-Deviation (No Delay)** | {mae_zero_delay:.2f} mins | {r2_zero_delay:.4f} | Assumes zero deviation from timetable |
+| **Schedule Baseline Formula** | {mae_base_delay:.2f} mins | {r2_base_delay:.4f} | `0.7 * current_delay` linear heuristic |
+| **Random Forest Regressor** | **{mae_rf_delay:.2f} mins** | **{r2_rf_delay:.4f}** | Direct delay deviation regression |
+| **XGBoost Regressor** | **{mae_xgb_delay:.2f} mins** | **{r2_xgb_delay:.4f}** | Primary gradient-boosted delay deviation regression |
 
 > [!NOTE]
 > Primary evaluation metric: **MAE (Mean Absolute Error in minutes)**.
-> Both Random Forest (`eta_random_forest.pkl`) and XGBoost (`eta_xgboost.json`) are fully saved and executed during live inference.
+> Both Random Forest (`eta_random_forest.pkl`) and XGBoost (`eta_xgboost.json`) predict delay deviation and are reconstructed in real-time during live inference.
 
 ---
 
@@ -98,57 +113,83 @@ def train_and_evaluate_models():
     - backend/models/eta_random_forest.pkl
     """
     print("\n=======================================================")
-    print("    RAILSIGHT AI - REBUILDING & TRAINING DUAL ML MODELS")
+    print("    RAILVUE AI - REBUILDING & TRAINING DUAL ML MODELS")
     print("=======================================================")
 
     # 1. Obtain Journey-Aware Split
     X_train, X_test, y_train, y_test, split_info = dataset_builder.get_journey_aware_train_test_split()
+    y_test_absolute = y_test + X_test["scheduled_remaining_time_minutes"]
 
     # -------------------------------------------------------------
     # MODEL 1: SCHEDULE BASELINE
     # -------------------------------------------------------------
     y_pred_baseline = X_test["scheduled_remaining_time_minutes"] + (X_test["current_delay_minutes"] * 0.7)
-    mae_base = mean_absolute_error(y_test, y_pred_baseline)
-    rmse_base = np.sqrt(mean_squared_error(y_test, y_pred_baseline))
-    r2_base = r2_score(y_test, y_pred_baseline)
+    mae_base = mean_absolute_error(y_test_absolute, y_pred_baseline)
+    rmse_base = np.sqrt(mean_squared_error(y_test_absolute, y_pred_baseline))
+    r2_base = r2_score(y_test_absolute, y_pred_baseline)
+
+    y_pred_base_delta = X_test["current_delay_minutes"] * 0.7
+    mae_base_delay = mean_absolute_error(y_test, y_pred_base_delta)
+    r2_base_delay = r2_score(y_test, y_pred_base_delta)
 
     # -------------------------------------------------------------
     # MODEL 2: RANDOM FOREST REGRESSOR (PERSISTED)
     # -------------------------------------------------------------
     rf_model = RandomForestRegressor(n_estimators=100, max_depth=12, random_state=42)
     rf_model.fit(X_train, y_train)
-    y_pred_rf = rf_model.predict(X_test)
+    y_pred_rf_delta = rf_model.predict(X_test)
+    y_pred_rf = y_pred_rf_delta + X_test["scheduled_remaining_time_minutes"]
 
-    mae_rf = mean_absolute_error(y_test, y_pred_rf)
-    rmse_rf = np.sqrt(mean_squared_error(y_test, y_pred_rf))
-    r2_rf = r2_score(y_test, y_pred_rf)
+    mae_rf = mean_absolute_error(y_test_absolute, y_pred_rf)
+    rmse_rf = np.sqrt(mean_squared_error(y_test_absolute, y_pred_rf))
+    r2_rf = r2_score(y_test_absolute, y_pred_rf)
+
+    mae_rf_delay = mean_absolute_error(y_test, y_pred_rf_delta)
+    r2_rf_delay = r2_score(y_test, y_pred_rf_delta)
 
     # -------------------------------------------------------------
-    # MODEL 3: XGBOOST REGRESSOR (PRIMARY PERSISTED MODEL)
+    # MODEL 3: XGBOOST REGRESSOR (TUNED BEST CONFIGURATION)
     # -------------------------------------------------------------
     xgb_model = xgb.XGBRegressor(
         n_estimators=150,
-        max_depth=6,
-        learning_rate=0.08,
+        max_depth=4,
+        learning_rate=0.03,
         subsample=0.8,
         colsample_bytree=0.8,
         random_state=42
     )
     xgb_model.fit(X_train, y_train)
-    y_pred_xgb = xgb_model.predict(X_test)
+    y_pred_xgb_delta = xgb_model.predict(X_test)
+    y_pred_xgb = y_pred_xgb_delta + X_test["scheduled_remaining_time_minutes"]
 
-    mae_xgb = mean_absolute_error(y_test, y_pred_xgb)
-    rmse_xgb = np.sqrt(mean_squared_error(y_test, y_pred_xgb))
-    r2_xgb = r2_score(y_test, y_pred_xgb)
+    mae_xgb = mean_absolute_error(y_test_absolute, y_pred_xgb)
+    rmse_xgb = np.sqrt(mean_squared_error(y_test_absolute, y_pred_xgb))
+    r2_xgb = r2_score(y_test_absolute, y_pred_xgb)
+
+    mae_xgb_delay = mean_absolute_error(y_test, y_pred_xgb_delta)
+    r2_xgb_delay = r2_score(y_test, y_pred_xgb_delta)
+
+    mae_zero_delay = mean_absolute_error(y_test, np.zeros_like(y_test))
+    r2_zero_delay = r2_score(y_test, np.zeros_like(y_test))
 
     print("\n=======================================================")
     print("      MODEL EVALUATION & ACCURACY COMPARISON RESULTS   ")
     print("=======================================================")
+    print("HEADLINE METRICS (Reconstructed Absolute Remaining Travel Time):")
     print(f"Model 1: Schedule Baseline   | MAE: {mae_base:.2f} min | RMSE: {rmse_base:.2f} min | R²: {r2_base:.4f}")
     print(f"Model 2: Random Forest       | MAE: {mae_rf:.2f} min | RMSE: {rmse_rf:.2f} min | R²: {r2_rf:.4f}")
     print(f"Model 3: XGBoost Regressor   | MAE: {mae_xgb:.2f} min | RMSE: {rmse_xgb:.2f} min | R²: {r2_xgb:.4f}")
-    print(f"-------------------------------------------------------")
-    print(f" PRIMARY METRIC: Average ETA Error = {mae_xgb:.2f} minutes")
+    print("-------------------------------------------------------")
+    print("DELAY SKILL METRICS (Delay Deviation Delta Only):")
+    print(f"Zero-Deviation (No Delay)   | MAE: {mae_zero_delay:.2f} min | R²: {r2_zero_delay:.4f}")
+    print(f"Schedule Baseline Formula   | MAE: {mae_base_delay:.2f} min | R²: {r2_base_delay:.4f}")
+    print(f"Random Forest (Delta)       | MAE: {mae_rf_delay:.2f} min | R²: {r2_rf_delay:.4f}")
+    print(f"XGBoost Regressor (Delta)   | MAE: {mae_xgb_delay:.2f} min | R²: {r2_xgb_delay:.4f}")
+    primary_name = "XGBoost Regressor" if mae_xgb <= mae_rf else "Random Forest Regressor"
+    primary_key = "xgboost" if mae_xgb <= mae_rf else "random_forest"
+    primary_mae = min(mae_xgb, mae_rf)
+    print("-------------------------------------------------------")
+    print(f" PRIMARY METRIC: Average ETA Error ({primary_name}) = {primary_mae:.2f} minutes")
     print("=======================================================\n")
 
     # Save Model Artifacts (BOTH XGBoost & Random Forest)
@@ -165,9 +206,12 @@ def train_and_evaluate_models():
     meta_path = os.path.join(models_dir, "model_metadata.json")
     meta = {
         "model_type": "XGBoost Regressor & Random Forest Regressor",
+        "primary_production_model": primary_key,
         "notice": "Validated on current engineered prototype dataset",
         "feature_names": FEATURE_COLUMNS,
         "target_column": TARGET_COLUMN,
+        "model_target_column": MODEL_TARGET_COLUMN,
+        "reconstruction_formula": "predicted_absolute_minutes = model_predicted_delay_minutes + scheduled_remaining_time_minutes",
         "split_strategy": split_info["split_strategy"],
         "saved_models": {
             "xgboost": "eta_xgboost.json",
@@ -175,10 +219,10 @@ def train_and_evaluate_models():
         },
         "metrics": {
             "schedule_baseline": {"mae": round(mae_base, 2), "rmse": round(rmse_base, 2), "r2": round(r2_base, 4)},
-            "random_forest": {"mae": round(mae_rf, 2), "rmse": round(rmse_rf, 2), "r2": round(r2_rf, 4)},
-            "xgboost": {"mae": round(mae_xgb, 2), "rmse": round(rmse_xgb, 2), "r2": round(r2_xgb, 4)}
+            "random_forest": {"mae": round(mae_rf, 2), "rmse": round(rmse_rf, 2), "r2": round(r2_rf, 4), "delay_only_mae": round(mae_rf_delay, 2), "delay_only_r2": round(r2_rf_delay, 4)},
+            "xgboost": {"mae": round(mae_xgb, 2), "rmse": round(rmse_xgb, 2), "r2": round(r2_xgb, 4), "delay_only_mae": round(mae_xgb_delay, 2), "delay_only_r2": round(r2_xgb_delay, 4)}
         },
-        "average_eta_error_minutes": round(mae_xgb, 2),
+        "average_eta_error_minutes": round(primary_mae, 2),
         "trained_at": pd.Timestamp.now().isoformat()
     }
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -193,8 +237,105 @@ def train_and_evaluate_models():
         split_info,
         mae_base, rmse_base, r2_base,
         mae_rf, rmse_rf, r2_rf,
-        mae_xgb, rmse_xgb, r2_xgb
+        mae_xgb, rmse_xgb, r2_xgb,
+        mae_rf_delay, r2_rf_delay,
+        mae_xgb_delay, r2_xgb_delay,
+        mae_base_delay, r2_base_delay,
+        mae_zero_delay, r2_zero_delay
     )
+
+    # -------------------------------------------------------------
+    # PART A: PER-DISTANCE-SEGMENT EVALUATION (TERCILE BUCKETING)
+    # -------------------------------------------------------------
+    print("\n=======================================================")
+    print("    EVALUATION BY JOURNEY LENGTH SEGMENTS (TERCILES)   ")
+    print("=======================================================")
+    segments = pd.qcut(
+        X_test["scheduled_remaining_time_minutes"],
+        q=3,
+        labels=["Short-Haul", "Medium-Haul", "Long-Haul"]
+    )
+    segment_metrics = {}
+    for seg in ["Short-Haul", "Medium-Haul", "Long-Haul"]:
+        mask = (segments == seg)
+        cnt = int(mask.sum())
+        y_true_seg = y_test_absolute[mask]
+
+        seg_xgb_mae = float(mean_absolute_error(y_true_seg, y_pred_xgb[mask]))
+        seg_xgb_r2 = float(r2_score(y_true_seg, y_pred_xgb[mask]))
+
+        seg_rf_mae = float(mean_absolute_error(y_true_seg, y_pred_rf[mask]))
+        seg_rf_r2 = float(r2_score(y_true_seg, y_pred_rf[mask]))
+
+        segment_metrics[seg] = {
+            "sample_count": cnt,
+            "xgb_mae": round(seg_xgb_mae, 2),
+            "xgb_r2": round(seg_xgb_r2, 4),
+            "rf_mae": round(seg_rf_mae, 2),
+            "rf_r2": round(seg_rf_r2, 4)
+        }
+        print(f"{seg:12s} | N={cnt:3d} | XGB MAE: {seg_xgb_mae:.2f} min, R²: {seg_xgb_r2:.4f} | RF MAE: {seg_rf_mae:.2f} min, R²: {seg_rf_r2:.4f}")
+
+    # Add segment_performance key to model_metadata.json metrics dict
+    meta["metrics"]["segment_performance"] = segment_metrics
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+    print(f"[OK] Added segment_performance to model metadata in {meta_path}")
+
+    # -------------------------------------------------------------
+    # PART B: DELAY-RISK CLASSIFIER (REUSING THE TRAIN/TEST SPLIT)
+    # -------------------------------------------------------------
+    from ml.delay_classifier import train_and_evaluate_delay_classifier
+    clf_results = train_and_evaluate_delay_classifier(
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        split_info=split_info
+    )
+
+    # -------------------------------------------------------------
+    # APPEND SECTIONS 5 & 6 TO docs/model_evaluation.md
+    # -------------------------------------------------------------
+    doc_path = os.path.join(backend_dir, "..", "docs", "model_evaluation.md")
+    addon_content = f"""
+---
+
+## 5. Performance by Journey Length Segment
+
+To avoid trip-length variance dominating global $R^2$, the test dataset is bucketed into 3 balanced distance terciles using `scheduled_remaining_time_minutes`:
+
+| Segment | Sample Count | XGBoost MAE | XGBoost R² | RF MAE | RF R² |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| **Short-Haul** | {segment_metrics['Short-Haul']['sample_count']} | **{segment_metrics['Short-Haul']['xgb_mae']:.2f} mins** | {segment_metrics['Short-Haul']['xgb_r2']:.4f} | **{segment_metrics['Short-Haul']['rf_mae']:.2f} mins** | {segment_metrics['Short-Haul']['rf_r2']:.4f} |
+| **Medium-Haul** | {segment_metrics['Medium-Haul']['sample_count']} | **{segment_metrics['Medium-Haul']['xgb_mae']:.2f} mins** | {segment_metrics['Medium-Haul']['xgb_r2']:.4f} | **{segment_metrics['Medium-Haul']['rf_mae']:.2f} mins** | {segment_metrics['Medium-Haul']['rf_r2']:.4f} |
+| **Long-Haul** | {segment_metrics['Long-Haul']['sample_count']} | **{segment_metrics['Long-Haul']['xgb_mae']:.2f} mins** | {segment_metrics['Long-Haul']['xgb_r2']:.4f} | **{segment_metrics['Long-Haul']['rf_mae']:.2f} mins** | {segment_metrics['Long-Haul']['rf_r2']:.4f} |
+
+---
+
+## 6. Delay Risk Classification
+
+In addition to continuous remaining travel time regression, an operational **Delay-Risk Classifier** (`delay_risk_classifier.pkl`) categorizes journey disruptions into 3 operational risk tiers:
+- **ON_TIME**: delay deviation <= 10 minutes
+- **MINOR_DELAY**: 10 < delay deviation <= 30 minutes
+- **MAJOR_DELAY**: delay deviation > 30 minutes
+
+### Classifier Benchmark Results
+* **Architecture**: Random Forest Classifier (150 estimators, max depth 10)
+* **Test Accuracy**: **{clf_results['accuracy'] * 100:.2f}%**
+* **Macro F1 Score**: **{clf_results['macro_f1']:.4f}**
+* **Saved Artifact**: `backend/models/delay_risk_classifier.pkl`
+
+### Confusion Matrix (Rows = Actual, Columns = Predicted)
+| Actual / Predicted | Predicted ON_TIME | Predicted MINOR_DELAY | Predicted MAJOR_DELAY | Total Actual |
+| :--- | ---: | ---: | ---: | ---: |
+| **Actual ON_TIME** | {clf_results['confusion_matrix'][0][0]} | {clf_results['confusion_matrix'][0][1]} | {clf_results['confusion_matrix'][0][2]} | {sum(clf_results['confusion_matrix'][0])} |
+| **Actual MINOR_DELAY** | {clf_results['confusion_matrix'][1][0]} | {clf_results['confusion_matrix'][1][1]} | {clf_results['confusion_matrix'][1][2]} | {sum(clf_results['confusion_matrix'][1])} |
+| **Actual MAJOR_DELAY** | {clf_results['confusion_matrix'][2][0]} | {clf_results['confusion_matrix'][2][1]} | {clf_results['confusion_matrix'][2][2]} | {sum(clf_results['confusion_matrix'][2])} |
+"""
+    with open(doc_path, "a", encoding="utf-8") as f:
+        f.write(addon_content)
+    print(f"[OK] Appended Sections 5 and 6 to: {doc_path}")
 
 if __name__ == "__main__":
     train_and_evaluate_models()

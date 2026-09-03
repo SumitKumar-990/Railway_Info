@@ -23,6 +23,26 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
   const [toSuggestions, setToSuggestions] = useState<StationItem[]>([]);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const fromRef = useRef<HTMLDivElement>(null);
+  const toRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setTrainSuggestions([]);
+      }
+      if (fromRef.current && !fromRef.current.contains(e.target as Node)) {
+        setShowFromDropdown(false);
+      }
+      if (toRef.current && !toRef.current.contains(e.target as Node)) {
+        setShowToDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Quick Trains (Kept strictly as convenient shortcuts)
   const popularTrains = [
@@ -138,9 +158,16 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
     <div className="max-w-4xl mx-auto space-y-8 py-4">
       {/* Hero Welcome Banner */}
       <div className="text-center space-y-3">
+        <div className="flex justify-center mb-1">
+          <img
+            src="/railvue-logo.png"
+            alt="RailVue AI Logo"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-xl shadow-blue-500/10 border border-slate-200/80 bg-white p-1.5 object-contain"
+          />
+        </div>
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-          <span>Real-Time Railway Telemetry & Dynamic ETA Intelligence</span>
+          <span>RailVue AI — Real-Time Railway Telemetry & Dynamic ETA Intelligence</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-heading">
           Where is your train right now?
@@ -151,7 +178,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
       </div>
 
       {/* Main Tabbed Search Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-6 relative">
         {/* Tab Controls */}
         <div className="flex bg-slate-100 p-1.5 rounded-2xl max-w-md mx-auto">
           <button
@@ -183,13 +210,16 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
         {/* 1. TRACK MY TRAIN TAB (Connected to GET /api/trains/search) */}
         {activeTab === 'track' && (
           <div className="space-y-4">
-            <div className="relative">
+            <div ref={searchRef} className="relative">
               <div className="relative flex items-center">
                 <Search className="w-6 h-6 text-slate-400 absolute left-4 pointer-events-none" />
                 <input
                   type="text"
                   value={trainQuery}
                   onChange={(e) => setTrainQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setTrainSuggestions([]);
+                  }}
                   placeholder="Enter train number or train name (e.g. 12019, Rajdhani, Mandovi, 12301)..."
                   className="w-full pl-13 pr-4 py-4.5 bg-slate-50 border border-slate-200 rounded-2xl text-base text-slate-900 placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                 />
@@ -197,8 +227,8 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
 
               {/* Universal Train Suggestions Dropdown */}
               {trainSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl z-30 overflow-hidden divide-y divide-slate-100 max-h-80 overflow-y-auto">
-                  <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 divide-y divide-slate-100 max-h-96 overflow-y-auto">
+                  <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 z-10">
                     <span>Train Search Results ({trainSuggestions.length})</span>
                     <span>Click to Track Live</span>
                   </div>
@@ -287,7 +317,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
           <form onSubmit={handleFindSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto,1fr] gap-3 items-center">
               {/* FROM STATION */}
-              <div className="relative">
+              <div ref={fromRef} className="relative">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   From Station
                 </label>
@@ -316,7 +346,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                 </div>
 
                 {showFromDropdown && fromSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
                     {fromSuggestions.map((st) => (
                       <button
                         type="button"
@@ -350,7 +380,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
               </div>
 
               {/* TO STATION */}
-              <div className="relative">
+              <div ref={toRef} className="relative">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   To Station
                 </label>
@@ -379,7 +409,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                 </div>
 
                 {showToDropdown && toSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
                     {toSuggestions.map((st) => (
                       <button
                         type="button"

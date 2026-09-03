@@ -55,9 +55,16 @@ def generate_indian_railways_raw_data(num_samples: int = 1500) -> pd.DataFrame:
         weather_impact = np.random.choice([0, 5, 12, 20], p=[0.7, 0.15, 0.1, 0.05])
         congestion_impact = np.random.choice([0, 8, 18, 30], p=[0.6, 0.2, 0.15, 0.05])
         
-        # True remaining travel time (target variable)
-        remaining_travel_time = base_scheduled_remaining_minutes + (current_delay * 0.6) + weather_impact + congestion_impact + (historical_route_delay * 0.3)
-        remaining_travel_time = max(10, remaining_travel_time + np.random.normal(0, 4))
+        crew_and_ops_variance = np.random.normal(0, 9)
+        unmodeled_disruption = np.random.choice([0, np.random.uniform(10, 45)], p=[0.85, 0.15])
+        weather_delay_interaction = 0.15 * weather_impact * (current_delay > 20)
+
+        remaining_travel_time = (
+            base_scheduled_remaining_minutes + (current_delay * 0.6) + weather_impact
+            + congestion_impact + (historical_route_delay * 0.3) + weather_delay_interaction
+            + crew_and_ops_variance + unmodeled_disruption
+        )
+        remaining_travel_time = max(10, remaining_travel_time)
         
         time_offset = timedelta(minutes=int(np.random.uniform(0, 30 * 24 * 60)))
         ts = base_time + time_offset

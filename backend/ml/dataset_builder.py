@@ -34,6 +34,7 @@ FEATURE_COLUMNS = [
 ]
 
 TARGET_COLUMN = "remaining_travel_time_minutes"
+MODEL_TARGET_COLUMN = "delay_deviation_minutes"
 
 # EXPLICIT LEAKAGE BLACKLIST (Forbidden Input Features)
 LEAKAGE_BLACK_LIST = [
@@ -59,24 +60,18 @@ class MLDatasetBuilder:
         """
         df = load_train_running_data(self.raw_filepath)
 
-        # Standardize column mappings if needed
+        # Standardize column mappings if needed (using fixed RandomState for reproducibility)
+        rng = np.random.RandomState(42)
         if "distance_to_next_station_km" not in df.columns:
-            df["distance_to_next_station_km"] = np.random.uniform(15, 120, size=len(df))
-
-        if "historical_avg_delay_minutes" not in df.columns:
-            df["historical_avg_delay_minutes"] = df.get("historical_route_delay", 10.0)
-
-        if "station_avg_delay_minutes" not in df.columns:
-            df["station_avg_delay_minutes"] = df.get("historical_station_delay", 8.0)
-
-        if "route_avg_delay_minutes" not in df.columns:
-            df["route_avg_delay_minutes"] = (df["historical_avg_delay_minutes"] + df["station_avg_delay_minutes"]) / 2.0
+            df["distance_to_next_station_km"] = rng.uniform(15, 120, size=len(df))
 
         if "previous_station_delay" not in df.columns:
-            df["previous_station_delay"] = np.maximum(0, df["current_delay_minutes"] - np.random.uniform(0, 5, size=len(df)))
+            df["previous_station_delay"] = np.maximum(0, df["current_delay_minutes"] - rng.uniform(0, 5, size=len(df)))
 
         if "upcoming_station_count" not in df.columns:
-            df["upcoming_station_count"] = np.random.randint(1, 10, size=len(df))
+            df["upcoming_station_count"] = rng.randint(1, 10, size=len(df))
+
+        df[MODEL_TARGET_COLUMN] = df[TARGET_COLUMN] - df["scheduled_remaining_time_minutes"]
 
         # Perform strict data leakage audit check
         self._audit_data_leakage(df.columns)
@@ -116,11 +111,17 @@ class MLDatasetBuilder:
         df_train = df[train_mask].copy()
         df_test = df[test_mask].copy()
 
+        from ml.feature_engineering import GroupbyDelayAggregator
+        aggregator = GroupbyDelayAggregator()
+        aggregator.fit(df_train, delay_col="current_delay_minutes")
+        df_train = aggregator.transform(df_train)
+        df_test = aggregator.transform(df_test)
+
         X_train = df_train[FEATURE_COLUMNS]
-        y_train = df_train[TARGET_COLUMN]
+        y_train = df_train[MODEL_TARGET_COLUMN]
 
         X_test = df_test[FEATURE_COLUMNS]
-        y_test = df_test[TARGET_COLUMN]
+        y_test = df_test[MODEL_TARGET_COLUMN]
 
         split_info = {
             "total_samples": len(df),

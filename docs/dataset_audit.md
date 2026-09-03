@@ -1,7 +1,7 @@
-# RailSight AI - Dataset Audit Documentation
+# RailVue AI - Dataset Audit Documentation
 
 ## Overview
-This document contains the comprehensive audit of all uploaded datasets in the RailSight AI workspace for the **Real-Time Dynamic ETA Prediction System for Indian Railway Coaching Trains** (Smart India Hackathon).
+This document contains the comprehensive audit of all uploaded datasets in the RailVue AI workspace for the **Real-Time Dynamic ETA Prediction System for Indian Railway Coaching Trains** (Smart India Hackathon).
 
 ---
 

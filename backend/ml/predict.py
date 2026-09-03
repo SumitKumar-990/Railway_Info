@@ -18,7 +18,7 @@ from ml.explainability import calculate_feature_attributions
 
 class ETAPredictor:
     """
-    Refactored Central Inference Engine for RailSight AI.
+    Refactored Central Inference Engine for RailVue AI.
     Runs dataset validation, dual model inference (XGBoost + Random Forest),
     and enforces strict Monotonic Chronological ETA Ordering across route stations.
     """
@@ -59,6 +59,34 @@ class ETAPredictor:
             except Exception as e:
                 print(f"[WARN] Error loading Random Forest model: {e}")
 
+        # Load Optional Delay Risk Classifier
+        clf_path = os.path.join(models_dir, "delay_risk_classifier.pkl")
+        self.clf_model = None
+        if os.path.exists(clf_path):
+            try:
+                self.clf_model = joblib.load(clf_path)
+            except Exception as e:
+                print(f"[WARN] Error loading Delay Risk Classifier: {e}")
+
+    def predict_delay_risk(self, feature_dict: dict) -> str:
+        """
+        Predicts categorical operational risk ('ON_TIME', 'MINOR_DELAY', 'MAJOR_DELAY').
+        """
+        if self.clf_model and self.feature_names:
+            try:
+                row = [float(feature_dict.get(col, 0.0)) for col in self.feature_names]
+                X_df = pd.DataFrame([row], columns=self.feature_names)
+                return str(self.clf_model.predict(X_df)[0])
+            except Exception:
+                pass
+
+        delta = float(feature_dict.get("current_delay_minutes", 0.0)) * 0.7
+        if delta <= 10:
+            return "ON_TIME"
+        elif delta <= 30:
+            return "MINOR_DELAY"
+        return "MAJOR_DELAY"
+
     def predict_remaining_time(self, feature_dict: dict) -> Tuple[float, float, float]:
         """
         Executes real dual model inference:
@@ -80,8 +108,8 @@ class ETAPredictor:
         # Random Forest Inference
         if self.rf_model:
             try:
-                rf_mins = float(self.rf_model.predict(X_df)[0])
-                rf_mins = max(5.0, rf_mins)
+                rf_delta_mins = float(self.rf_model.predict(X_df)[0])
+                rf_mins = max(5.0, sched_remaining + rf_delta_mins)
             except Exception:
                 rf_mins = max(5.0, sched_remaining + (delay * 0.82))
         else:
@@ -90,8 +118,8 @@ class ETAPredictor:
         # XGBoost Inference (Primary)
         if self.xgb_model:
             try:
-                xgb_mins = float(self.xgb_model.predict(X_df)[0])
-                xgb_mins = max(5.0, xgb_mins)
+                xgb_delta_mins = float(self.xgb_model.predict(X_df)[0])
+                xgb_mins = max(5.0, sched_remaining + xgb_delta_mins)
             except Exception:
                 xgb_mins = rf_mins
         else:

@@ -4,10 +4,10 @@ from typing import Dict, Any
 
 def get_dataset_metadata() -> Dict[str, Any]:
     """
-    Returns metadata for RailSight AI datasets, data sources, and fallback priority hierarchy.
+    Returns metadata for RailVue AI datasets, data sources, and fallback priority hierarchy.
     """
     return {
-        "dataset_name": "RailSight AI Integrated Indian Railways Operational Dataset",
+        "dataset_name": "RailVue AI Integrated Indian Railways Operational Dataset",
         "dataset_type": "Hybrid (Real Public GeoJSON + Historical Kaggle + Engineered Prototype Run Snapshots)",
         "status_notice": "Validated on current engineered prototype dataset",
         "record_counts": {

@@ -27,10 +27,14 @@ def load_train_running_data(filepath: str = None) -> pd.DataFrame:
     
     # Assign synthetic journey_id if missing to allow journey-aware train/test splits
     if "journey_id" not in df.columns:
-        # Group every 10 consecutive snapshot rows per train as a distinct journey run
-        df["journey_run_seq"] = (df.groupby("train_id").cumcount() // 10)
-        df["journey_id"] = "JRN_" + df["train_id"].astype(str) + "_" + df["journey_run_seq"].astype(str)
-        df.drop(columns=["journey_run_seq"], inplace=True, errors="ignore")
+        if "timestamp" in df.columns:
+            df["journey_date_str"] = df["timestamp"].dt.strftime("%Y-%m-%d")
+            df["journey_id"] = "JRN_" + df["train_id"].astype(str) + "_" + df["journey_date_str"]
+            df.drop(columns=["journey_date_str"], inplace=True, errors="ignore")
+        else:
+            df["journey_run_seq"] = (df.groupby("train_id").cumcount() // 10)
+            df["journey_id"] = "JRN_" + df["train_id"].astype(str) + "_" + df["journey_run_seq"].astype(str)
+            df.drop(columns=["journey_run_seq"], inplace=True, errors="ignore")
 
     print(f"[OK] Loaded Train Running Data: {len(df)} records across {df['journey_id'].nunique()} distinct journeys")
     return df

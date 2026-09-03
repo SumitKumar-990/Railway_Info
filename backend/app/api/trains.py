@@ -269,10 +269,10 @@ async def get_live_train_status(
         })
 
     prev_st, next_st, seg_prog = live_location_engine.match_segment_by_distance(formatted_stations_input, covered_km)
-    prev_st_name = status.get("previous_station") or prev_st.get("station_name", src_name)
-    prev_st_code = status.get("previous_station_code") or prev_st.get("station_code", src_code)
-    next_st_name = status.get("next_station") or next_st.get("station_name", dst_name)
-    next_st_code = status.get("next_station_code") or next_st.get("station_code", dst_code)
+    prev_st_name = (status.get("previous_station") if status else None) or prev_st.get("station_name", src_name)
+    prev_st_code = (status.get("previous_station_code") if status else None) or prev_st.get("station_code", src_code)
+    next_st_name = (status.get("next_station") if status else None) or next_st.get("station_name", dst_name)
+    next_st_code = (status.get("next_station_code") if status else None) or next_st.get("station_code", dst_code)
 
     # 4. Generate dynamic ML predictions for all remaining stations
     if is_arrived:
@@ -456,7 +456,7 @@ async def get_train_eta_prediction(
     
     # If not in registry, construct default telemetry
     if not train:
-        live = railradar_client.get_live_train_status(train_id, date=date)
+        live = railradar_client.get_live_train_status(train_id, date=date) or {}
         train = {
             "train_id": train_id,
             "train_number": train_id,

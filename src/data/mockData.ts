@@ -831,5 +831,5 @@ export const DELAY_CAUSES_DATA = [
 export const MODEL_ACCURACY_COMPARISON = [
   { name: 'Baseline Schedule', accuracy: 71.0, color: '#94a3b8' },
   { name: 'Traditional NTES Delay ETA', accuracy: 82.4, color: '#3b82f6' },
-  { name: 'RailSight AI Prediction Engine', accuracy: 94.8, color: '#10b981' }
+  { name: 'RailVue AI Prediction Engine', accuracy: 94.8, color: '#10b981' }
 ];

@@ -1,5 +1,6 @@
 {
   "model_type": "XGBoost Regressor & Random Forest Regressor",
+  "primary_production_model": "xgboost",
   "notice": "Validated on current engineered prototype dataset",
   "feature_names": [
     "current_delay_minutes",
@@ -22,6 +23,8 @@
     "upcoming_station_count"
   ],
   "target_column": "remaining_travel_time_minutes",
+  "model_target_column": "delay_deviation_minutes",
+  "reconstruction_formula": "predicted_absolute_minutes = model_predicted_delay_minutes + scheduled_remaining_time_minutes",
   "split_strategy": "JOURNEY_AWARE_RUN_SPLIT (No Journey Overlap)",
   "saved_models": {
     "xgboost": "eta_xgboost.json",
@@ -29,21 +32,88 @@
   },
   "metrics": {
     "schedule_baseline": {
-      "mae": 11.17,
-      "rmse": 15.1,
-      "r2": 0.9965
+      "mae": 17.97,
+      "rmse": 23.38,
+      "r2": 0.9934
     },
     "random_forest": {
-      "mae": 7.74,
-      "rmse": 10.19,
-      "r2": 0.9984
+      "mae": 10.62,
+      "rmse": 13.9,
+      "r2": 0.9977,
+      "delay_only_mae": 10.62,
+      "delay_only_r2": 0.481
     },
     "xgboost": {
-      "mae": 7.29,
-      "rmse": 10.1,
-      "r2": 0.9984
+      "mae": 10.37,
+      "rmse": 13.65,
+      "r2": 0.9977,
+      "delay_only_mae": 10.37,
+      "delay_only_r2": 0.4993
+    },
+    "segment_performance": {
+      "Short-Haul": {
+        "sample_count": 172,
+        "xgb_mae": 10.73,
+        "xgb_r2": 0.9449,
+        "rf_mae": 10.99,
+        "rf_r2": 0.9429
+      },
+      "Medium-Haul": {
+        "sample_count": 171,
+        "xgb_mae": 10.5,
+        "xgb_r2": 0.9545,
+        "rf_mae": 10.45,
+        "rf_r2": 0.9541
+      },
+      "Long-Haul": {
+        "sample_count": 172,
+        "xgb_mae": 9.88,
+        "xgb_r2": 0.9955,
+        "rf_mae": 10.41,
+        "rf_r2": 0.9952
+      }
     }
   },
-  "average_eta_error_minutes": 7.29,
-  "trained_at": "2026-08-29T01:35:02.075112"
+  "average_eta_error_minutes": 10.37,
+  "trained_at": "2026-09-03T14:52:30.992115",
+  "delay_risk_classifier": {
+    "model_type": "RandomForestClassifier",
+    "saved_model": "delay_risk_classifier.pkl",
+    "accuracy": 0.5728,
+    "macro_f1": 0.5628,
+    "class_labels": [
+      "ON_TIME",
+      "MINOR_DELAY",
+      "MAJOR_DELAY"
+    ],
+    "thresholds": {
+      "ON_TIME": "<= 10 minutes deviation",
+      "MINOR_DELAY": "10-30 minutes deviation",
+      "MAJOR_DELAY": "> 30 minutes deviation"
+    },
+    "confusion_matrix": {
+      "labels": [
+        "ON_TIME",
+        "MINOR_DELAY",
+        "MAJOR_DELAY"
+      ],
+      "matrix": [
+        [
+          50,
+          62,
+          1
+        ],
+        [
+          35,
+          141,
+          31
+        ],
+        [
+          6,
+          85,
+          104
+        ]
+      ]
+    }
+  }
 }

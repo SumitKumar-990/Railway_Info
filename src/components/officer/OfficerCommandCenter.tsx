@@ -103,7 +103,7 @@ export default function OfficerCommandCenter({
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-heading text-white">
-            RailSight AI Network Command Center
+            RailVue AI Network Command Center
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
             Real-time railway corridor density, spatial clustering, and predictive delay propagation monitoring.
@@ -182,7 +182,7 @@ export default function OfficerCommandCenter({
             Dual XGBoost + RF
           </p>
           <p className="text-xs text-slate-500">
-            MAE Error: 7.29 min | 15s interval ticker
+            MAE Error: 10.37 min | 15s interval ticker
           </p>
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function OfficerCommandCenter({
             <div className="bg-blue-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs space-y-1 text-blue-950">
               <div className="flex items-center gap-1.5 font-bold text-blue-800">
                 <Sparkles className="w-4 h-4 text-blue-600" />
-                <span>RailSight AI Assessment</span>
+                <span>RailVue AI Assessment</span>
               </div>
               <p className="text-slate-700 font-medium leading-relaxed">
                 {selectedCorridor.ai_assessment}

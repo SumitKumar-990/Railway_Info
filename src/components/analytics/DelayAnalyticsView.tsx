@@ -71,7 +71,7 @@ export default function DelayAnalyticsView() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-bold text-slate-900 font-heading">ETA Prediction Accuracy Benchmark</h3>
-                <p className="text-xs text-slate-500">RailSight AI vs legacy NTES & static timetables</p>
+                <p className="text-xs text-slate-500">RailVue AI vs legacy NTES & static timetables</p>
               </div>
               <Award className="w-6 h-6 text-emerald-500" />
             </div>
@@ -94,7 +94,7 @@ export default function DelayAnalyticsView() {
           </div>
 
           <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs font-bold text-emerald-900">
-            <span>RailSight AI Engine Performance:</span>
+            <span>RailVue AI Engine Performance:</span>
             <span className="font-mono text-emerald-700 text-sm">94.8% Accuracy (+12.4% over NTES)</span>
           </div>
         </div>
