@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Filter, Clock, MapPin, ChevronDown, ChevronUp, CheckCircle2, Navigation, AlertTriangle, Sparkles, Edit3, HelpCircle, Info, Train as TrainIcon, ShieldAlert } from 'lucide-react';
 import { StationStop } from '../../types';
+import { formatPassengerTime } from '../../utils/timeFormat';
 
 interface RailRadarTimelineProps {
   trainNumber: string;
@@ -16,6 +17,7 @@ interface RailRadarTimelineProps {
   selectedStation?: StationStop | null;
   onSelectStation?: (station: StationStop) => void;
   coachPosition?: string;
+  journeyDate?: string;
 }
 
 export default function RailRadarTimeline({
@@ -31,27 +33,51 @@ export default function RailRadarTimeline({
   currentStationCode,
   selectedStation,
   onSelectStation,
-  coachPosition = 'ENG, LPR, GEN, GEN, HA1, A2, A1, B5, B4, B3, B2, B1, PC, S7, S6, S5, S4, S3, S2, S1, GEN, GEN, SLRD'
+  coachPosition = 'ENG, LPR, GEN, GEN, HA1, A2, A1, B5, B4, B3, B2, B1, PC, S7, S6, S5, S4, S3, S2, S1, GEN, GEN, SLRD',
+  journeyDate
 }: RailRadarTimelineProps) {
   const [showHaltsOnly, setShowHaltsOnly] = useState(false);
   const [showCoachModal, setShowCoachModal] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  // Default to 12-hour AM/PM format for maximum passenger readability
+  const [use24HourTime, setUse24HourTime] = useState(false);
+
+  // Dynamic Day Header Date Labels
+  const day1DateLabel = useMemo(() => {
+    if (!journeyDate) return 'DAY 1';
+    try {
+      const [y, m, d] = journeyDate.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      return `DAY 1 • ${d.toString().padStart(2, '0')} ${months[dt.getMonth()]}`;
+    } catch {
+      return 'DAY 1';
+    }
+  }, [journeyDate]);
+
+  const day2DateLabel = useMemo(() => {
+    if (!journeyDate) return 'DAY 2';
+    try {
+      const [y, m, d] = journeyDate.split('-').map(Number);
+      const dt = new Date(y, m - 1, d + 1);
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      return `DAY 2 • ${dt.getDate().toString().padStart(2, '0')} ${months[dt.getMonth()]}`;
+    } catch {
+      return 'DAY 2';
+    }
+  }, [journeyDate]);
 
   // Filter stations based on halts toggle
   const visibleStations = showHaltsOnly ? stations.filter(s => s.isHalt !== false) : stations;
 
-  // Group stations by Day (e.g. Day 1, Day 2)
-  const day1Stations = visibleStations.filter(s => (s.distanceFromOrigin || s.distanceKm || 0) < 600);
-  const day2Stations = visibleStations.filter(s => (s.distanceFromOrigin || s.distanceKm || 0) >= 600);
-
   const defaultFaqs = [
     {
       q: `What time does ${trainNumber} (${trainName}) start from ${sourceStationName}?`,
-      a: `It departs from ${sourceStationName} (${stations[0]?.stationCode || 'ORG'}) at ${stations[0]?.scheduledDeparture || '06:00'} and reaches ${destinationStationName} (${stations[stations.length - 1]?.stationCode || 'DEST'}) at ${stations[stations.length - 1]?.scheduledArrival || '14:00'}.`
+      a: `It departs from ${sourceStationName} (${stations[0]?.stationCode || 'ORG'}) at ${formatPassengerTime(stations[0]?.scheduledDeparture, use24HourTime).formatted} and reaches ${destinationStationName} (${stations[stations.length - 1]?.stationCode || 'DEST'}) at ${formatPassengerTime(stations[stations.length - 1]?.scheduledArrival, use24HourTime).formatted}.`
     },
     {
       q: `What is the last station for ${trainNumber}?`,
-      a: `The final station of ${trainNumber} is ${destinationStationName} (${stations[stations.length - 1]?.stationCode || 'DEST'}), arriving at ${stations[stations.length - 1]?.scheduledArrival || '14:00'}. You can see the full schedule and route map above.`
+      a: `The final station of ${trainNumber} is ${destinationStationName} (${stations[stations.length - 1]?.stationCode || 'DEST'}), arriving at ${formatPassengerTime(stations[stations.length - 1]?.scheduledArrival, use24HourTime).formatted}. You can see the full schedule and route map above.`
     },
     {
       q: `Where is train number ${trainNumber} right now?`,
@@ -98,11 +124,25 @@ export default function RailRadarTimeline({
           </p>
         </div>
 
-        {/* Action Buttons: Yesterday/Today Selector, Coach Position Modal */}
+        {/* Action Buttons: 12h/24h Time Format Toggle, Coach Order, Halts Filter */}
         <div className="flex items-center gap-2 flex-wrap text-xs">
+          {/* Time Format Toggle */}
+          <button
+            onClick={() => setUse24HourTime(!use24HourTime)}
+            className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border text-xs ${
+              use24HourTime
+                ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-slate-700'
+            }`}
+            title="Switch between 12-hour (AM/PM) and 24-hour railway time"
+          >
+            <Clock className="w-3.5 h-3.5 text-blue-400" />
+            <span>{use24HourTime ? '24-Hour (Railway)' : '12-Hour (AM/PM)'}</span>
+          </button>
+
           <button
             onClick={() => setShowCoachModal(!showCoachModal)}
-            className="px-3.5 py-1.5 rounded-xl font-bold bg-slate-800 text-blue-400 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl font-bold bg-slate-800 text-blue-400 hover:bg-slate-700 border border-slate-700 transition flex items-center gap-1.5"
           >
             <TrainIcon className="w-3.5 h-3.5 text-blue-400" />
             <span>Coach Order</span>
@@ -110,7 +150,7 @@ export default function RailRadarTimeline({
 
           <button
             onClick={() => setShowHaltsOnly(!showHaltsOnly)}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
               showHaltsOnly
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
@@ -142,11 +182,11 @@ export default function RailRadarTimeline({
 
       {/* 3-COLUMN TABLE HEADER */}
       <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 px-3 py-2 bg-slate-900/60 rounded-xl border border-slate-800/80">
-        <span className="w-[30%] text-left">ARRIVAL</span>
+        <span className="w-[30%] sm:w-[35%] text-left">ARRIVAL</span>
         <span className="flex-1 text-center bg-slate-800 px-3 py-0.5 rounded-full text-slate-200 text-[11px] font-mono mx-2">
-          DAY 1 • 30 AUG
+          {day1DateLabel}
         </span>
-        <span className="w-[30%] text-right">DEPARTURE</span>
+        <span className="w-[30%] sm:w-[35%] text-right">DEPARTURE</span>
       </div>
 
       {/* RAILWAY TRACK TIMELINE CONTAINER */}
@@ -155,11 +195,23 @@ export default function RailRadarTimeline({
           const isCompleted = st.status === 'DEPARTED' || st.status === 'PASSED' || st.status === 'completed';
           const isCurrent = st.status === 'AT_STATION' || st.status === 'current' || st.stationCode === currentStationCode;
           const isApproaching = st.status === 'APPROACHING';
+          const isOrigin = idx === 0;
           const isDestination = idx === visibleStations.length - 1;
 
           const delayMins = st.delayMinutes ?? currentDelay;
           const isDelayed = delayMins > 5;
           const isSelected = selectedStation?.stationCode === st.stationCode;
+
+          // Parse and format passenger-friendly times
+          const rawSchedArr = st.scheduledArrival && st.scheduledArrival !== '--' ? st.scheduledArrival : (st.scheduledDeparture || '--');
+          const rawActArr = st.actualArrival || st.predictedArrival || st.scheduledArrival;
+          const schedArrInfo = formatPassengerTime(rawSchedArr, use24HourTime, journeyDate);
+          const actArrInfo = formatPassengerTime(rawActArr, use24HourTime, journeyDate);
+
+          const rawSchedDep = st.scheduledDeparture && st.scheduledDeparture !== '--' ? st.scheduledDeparture : (st.scheduledArrival || '--');
+          const rawActDep = st.actualDeparture || st.predictedDeparture || st.scheduledDeparture;
+          const schedDepInfo = formatPassengerTime(rawSchedDep, use24HourTime, journeyDate);
+          const actDepInfo = formatPassengerTime(rawActDep, use24HourTime, journeyDate);
 
           // Day divider insertion if distance exceeds 600km
           const showDay2Header = idx > 0 && (st.distanceFromOrigin || st.distanceKm || 0) >= 600 && (visibleStations[idx - 1].distanceFromOrigin || visibleStations[idx - 1].distanceKm || 0) < 600;
@@ -168,11 +220,11 @@ export default function RailRadarTimeline({
             <React.Fragment key={`st-row-${st.stationCode}-${idx}`}>
               {showDay2Header && (
                 <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400 px-3 py-2 bg-slate-900/60 rounded-xl border border-slate-800/80 my-4">
-                  <span className="w-[30%] text-left">ARRIVAL</span>
+                  <span className="w-[30%] sm:w-[35%] text-left">ARRIVAL</span>
                   <span className="flex-1 text-center bg-slate-800 px-3 py-0.5 rounded-full text-slate-200 text-[11px] font-mono mx-2">
-                    DAY 2 • 31 AUG
+                    {day2DateLabel}
                   </span>
-                  <span className="w-[30%] text-right">DEPARTURE</span>
+                  <span className="w-[30%] sm:w-[35%] text-right">DEPARTURE</span>
                 </div>
               )}
 
@@ -188,17 +240,37 @@ export default function RailRadarTimeline({
               >
                 {/* 1. LEFT COLUMN: ARRIVAL TIME */}
                 <div className="w-[30%] sm:w-[35%] text-left pr-2 space-y-0.5 font-mono">
-                  <div className="text-xs sm:text-sm font-semibold text-slate-100">
-                    {st.scheduledArrival && st.scheduledArrival !== '--' ? st.scheduledArrival : (st.scheduledDeparture || '--')}
-                  </div>
-                  {isDelayed ? (
-                    <div className="text-xs sm:text-sm font-extrabold text-rose-400">
-                      {st.actualArrival || st.predictedArrival || st.scheduledArrival}
-                    </div>
+                  {isOrigin ? (
+                    <div className="text-xs text-slate-500 font-mono italic">Source</div>
                   ) : (
-                    <div className="text-xs sm:text-sm font-bold text-emerald-400">
-                      {st.actualArrival || st.predictedArrival || st.scheduledArrival}
-                    </div>
+                    <>
+                      {/* Scheduled Time (Muted) */}
+                      <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">Sch</span>
+                        <span className={isDelayed && actArrInfo.formatted !== '--' ? 'line-through text-slate-500' : 'text-slate-300 font-medium'}>
+                          {schedArrInfo.formatted}
+                        </span>
+                      </div>
+
+                      {/* Actual / Expected Time (Highlighted) */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-xs sm:text-sm font-black font-mono tracking-tight ${
+                          isDelayed ? 'text-rose-400' : 'text-emerald-400'
+                        }`}>
+                          {actArrInfo.formatted !== '--' ? actArrInfo.formatted : schedArrInfo.formatted}
+                        </span>
+                        {actArrInfo.dayDiffLabel && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md">
+                            {actArrInfo.dayDiffLabel}
+                          </span>
+                        )}
+                        {isDelayed && delayMins > 0 && (
+                          <span className="text-[10px] font-bold text-rose-400/90 font-mono">
+                            +{Math.round(delayMins)}m
+                          </span>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -251,17 +323,37 @@ export default function RailRadarTimeline({
 
                 {/* 3. RIGHT COLUMN: DEPARTURE TIME */}
                 <div className="w-[30%] sm:w-[35%] text-right pl-2 space-y-0.5 font-mono">
-                  <div className="text-xs sm:text-sm font-semibold text-slate-100">
-                    {st.scheduledDeparture && st.scheduledDeparture !== '--' ? st.scheduledDeparture : (st.scheduledArrival || '--')}
-                  </div>
-                  {isDelayed ? (
-                    <div className="text-xs sm:text-sm font-extrabold text-rose-400">
-                      {st.actualDeparture || st.predictedDeparture || st.scheduledDeparture}
-                    </div>
+                  {isDestination ? (
+                    <div className="text-xs text-slate-500 font-mono italic">Terminus</div>
                   ) : (
-                    <div className="text-xs sm:text-sm font-bold text-emerald-400">
-                      {st.actualDeparture || st.predictedDeparture || st.scheduledDeparture}
-                    </div>
+                    <>
+                      {/* Scheduled Departure (Muted) */}
+                      <div className="flex items-center justify-end gap-1 text-[11px] sm:text-xs text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-500 font-sans uppercase font-bold tracking-wider">Sch</span>
+                        <span className={isDelayed && actDepInfo.formatted !== '--' ? 'line-through text-slate-500' : 'text-slate-300 font-medium'}>
+                          {schedDepInfo.formatted}
+                        </span>
+                      </div>
+
+                      {/* Actual / Expected Departure (Highlighted) */}
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {isDelayed && delayMins > 0 && (
+                          <span className="text-[10px] font-bold text-rose-400/90 font-mono">
+                            +{Math.round(delayMins)}m
+                          </span>
+                        )}
+                        {actDepInfo.dayDiffLabel && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md">
+                            {actDepInfo.dayDiffLabel}
+                          </span>
+                        )}
+                        <span className={`text-xs sm:text-sm font-black font-mono tracking-tight ${
+                          isDelayed ? 'text-rose-400' : 'text-emerald-400'
+                        }`}>
+                          {actDepInfo.formatted !== '--' ? actDepInfo.formatted : schedDepInfo.formatted}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

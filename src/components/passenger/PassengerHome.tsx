@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Train as TrainIcon, ArrowRightLeft, Clock, MapPin, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
+import { Search, Train as TrainIcon, ArrowRightLeft, Clock, MapPin, Sparkles, AlertCircle, ArrowRight, Ticket, Zap } from 'lucide-react';
 import { StationItem } from '../../types';
 import { mockTrainService } from '../../services/mockTrainService';
+import { EXPANDED_TRAINS, VANDE_BHARAT_TRAINS, SHATABDI_TRAINS, RAJDHANI_TRAINS, searchExpandedTrains, QuickTrain } from '../../data/expandedTrains';
+import SeatBookingModal from './SeatBookingModal';
 
 interface PassengerHomeProps {
   onSelectTrain: (trainId: string) => void;
@@ -9,7 +11,10 @@ interface PassengerHomeProps {
 }
 
 export default function PassengerHome({ onSelectTrain, onSearchBetween }: PassengerHomeProps) {
-  const [activeTab, setActiveTab] = useState<'track' | 'find'>('track');
+  const [activeTab, setActiveTab] = useState<'track' | 'find' | 'book'>('track');
+  const [bookingTrain, setBookingTrain] = useState<QuickTrain | null>(null);
+  const [catalogFilter, setCatalogFilter] = useState<'all' | 'Vande Bharat' | 'Shatabdi' | 'Rajdhani'>('all');
+  const [catalogSearch, setCatalogSearch] = useState('');
   const [trainQuery, setTrainQuery] = useState('');
   const [trainSuggestions, setTrainSuggestions] = useState<any[]>([]);
   const [isSearchingTrain, setIsSearchingTrain] = useState(false);
@@ -52,6 +57,20 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
     { number: '22436', name: 'Vande Bharat Express', route: 'NDLS → BSB', badge: 'Semi-High Speed' },
     { number: '12951', name: 'Mumbai Rajdhani Express', route: 'MMCT → NDLS', badge: 'Trunk Route' }
   ];
+
+  // Filtered catalog for booking tab
+  const catalogTrains = React.useMemo(() => {
+    let trains = catalogFilter === 'all' ? EXPANDED_TRAINS
+      : catalogFilter === 'Vande Bharat' ? VANDE_BHARAT_TRAINS
+      : catalogFilter === 'Shatabdi' ? SHATABDI_TRAINS
+      : RAJDHANI_TRAINS;
+    if (catalogSearch.trim()) {
+      return searchExpandedTrains(catalogSearch, 60).filter(t =>
+        catalogFilter === 'all' ? true : t.type === catalogFilter
+      );
+    }
+    return trains;
+  }, [catalogFilter, catalogSearch]);
 
   // Debounced Universal Train Search (Connected to GET /api/trains/search?q={query}&limit=15)
   useEffect(() => {
@@ -99,6 +118,32 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
     }, 200);
     return () => clearTimeout(timer);
   }, [toQuery]);
+
+  const resolveInputCode = (text: string, currentCode: string): string => {
+    if (currentCode && currentCode.length <= 5) return currentCode.toUpperCase();
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+    const m = trimmed.match(/\(([A-Za-z0-9]+)\)/);
+    if (m) return m[1].toUpperCase();
+    if (trimmed.length <= 5 && /^[A-Za-z0-9]+$/.test(trimmed)) {
+      return trimmed.toUpperCase();
+    }
+    const upper = trimmed.toUpperCase();
+    if (upper.includes('HOWRAH')) return 'HWH';
+    if (upper.includes('RANCHI')) return 'RNC';
+    if (upper.includes('DELHI')) return 'NDLS';
+    if (upper.includes('KANPUR')) return 'CNB';
+    if (upper.includes('MUMBAI') || upper.includes('BOMBAY')) return 'MMCT';
+    if (upper.includes('VARANASI') || upper.includes('BANARAS')) return 'BSB';
+    if (upper.includes('PRAYAGRAJ') || upper.includes('ALLAHABAD')) return 'PRYJ';
+    if (upper.includes('GOA') || upper.includes('MADGAON')) return 'MAO';
+    if (upper.includes('DURGAPUR')) return 'DGR';
+    if (upper.includes('DHANBAD')) return 'DHN';
+    if (upper.includes('BHOPAL')) return 'RKMP';
+    if (upper.includes('AGRA')) return 'AGC';
+    if (upper.includes('SEALDAH')) return 'SDAH';
+    return trimmed.substring(0, 4).toUpperCase();
+  };
 
   const handleSelectFrom = (st: StationItem) => {
     setFromQuery(`${st.name} (${st.code})`);
@@ -181,7 +226,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
       {/* Main Tabbed Search Card */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-6 relative">
         {/* Tab Controls */}
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl max-w-md mx-auto">
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl">
           <button
             type="button"
             onClick={() => setActiveTab('track')}
@@ -192,7 +237,7 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
             }`}
           >
             <TrainIcon className="w-4 h-4" />
-            <span>Track My Train</span>
+            <span>Track</span>
           </button>
           <button
             type="button"
@@ -204,7 +249,19 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
             }`}
           >
             <ArrowRightLeft className="w-4 h-4" />
-            <span>Find Trains</span>
+            <span>Find</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('book')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition duration-150 ${
+              activeTab === 'book'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Ticket className="w-4 h-4" />
+            <span>Book Seat</span>
           </button>
         </div>
 
@@ -329,8 +386,17 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                     value={fromQuery}
                     onFocus={() => setShowFromDropdown(true)}
                     onChange={(e) => {
-                      setFromQuery(e.target.value);
+                      const val = e.target.value;
+                      setFromQuery(val);
                       setShowFromDropdown(true);
+                      const m = val.match(/\(([A-Za-z0-9]+)\)/);
+                      if (m) {
+                        setFromCode(m[1].toUpperCase());
+                      } else if (val.trim().length <= 5 && /^[A-Za-z0-9]+$/.test(val.trim())) {
+                        setFromCode(val.trim().toUpperCase());
+                      } else {
+                        setFromCode('');
+                      }
                     }}
                     placeholder="Enter source station (e.g. HWH, Howrah)"
                     className="w-full pl-11 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
@@ -383,8 +449,17 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
                     value={toQuery}
                     onFocus={() => setShowToDropdown(true)}
                     onChange={(e) => {
-                      setToQuery(e.target.value);
+                      const val = e.target.value;
+                      setToQuery(val);
                       setShowToDropdown(true);
+                      const m = val.match(/\(([A-Za-z0-9]+)\)/);
+                      if (m) {
+                        setToCode(m[1].toUpperCase());
+                      } else if (val.trim().length <= 5 && /^[A-Za-z0-9]+$/.test(val.trim())) {
+                        setToCode(val.trim().toUpperCase());
+                      } else {
+                        setToCode('');
+                      }
                     }}
                     placeholder="Enter destination station (e.g. RNC, Ranchi)"
                     className="w-full pl-11 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
@@ -421,49 +496,206 @@ export default function PassengerHome({ onSelectTrain, onSearchBetween }: Passen
               <Search className="w-4 h-4" />
               <span>Find Trains on Route</span>
             </button>
+
+            {/* Popular Route Shortcuts */}
+            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+              <span className="font-semibold text-slate-500">Popular Routes:</span>
+              {[
+                { label: 'Howrah ⇄ Ranchi', fromName: 'Howrah Junction (HWH)', fromCode: 'HWH', toName: 'Ranchi Junction (RNC)', toCode: 'RNC' },
+                { label: 'New Delhi ⇄ Kanpur', fromName: 'New Delhi (NDLS)', fromCode: 'NDLS', toName: 'Kanpur Central (CNB)', toCode: 'CNB' },
+                { label: 'Mumbai ⇄ New Delhi', fromName: 'Mumbai Central (MMCT)', fromCode: 'MMCT', toName: 'New Delhi (NDLS)', toCode: 'NDLS' },
+                { label: 'New Delhi ⇄ Varanasi', fromName: 'New Delhi (NDLS)', fromCode: 'NDLS', toName: 'Varanasi Junction (BSB)', toCode: 'BSB' },
+                { label: 'Mumbai ⇄ Goa (MAO)', fromName: 'Mumbai CSMT (CSMT)', fromCode: 'CSMT', toName: 'Madgaon Goa (MAO)', toCode: 'MAO' }
+              ].map((route) => (
+                <button
+                  key={route.label}
+                  type="button"
+                  onClick={() => {
+                    setFromQuery(route.fromName);
+                    setFromCode(route.fromCode);
+                    setToQuery(route.toName);
+                    setToCode(route.toCode);
+                    onSearchBetween(route.fromCode, route.toCode);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition border border-blue-200/60"
+                >
+                  {route.label}
+                </button>
+              ))}
+            </div>
           </form>
         )}
       </div>
 
       {/* Popular Trains Grid (Quick Shortcuts Only) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-            POPULAR TRAINS
-          </h3>
-          <span className="text-[11px] font-medium text-slate-400">
-            Quick shortcuts • Search any train across India above
-          </span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {popularTrains.map((pt) => (
-            <div
-              key={pt.number}
-              onClick={() => onSelectTrain(pt.number)}
-              className="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl p-5 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-extrabold text-blue-600 text-base">
-                    {pt.number}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-400">•</span>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                    {pt.badge}
+      {activeTab !== 'book' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              POPULAR TRAINS
+            </h3>
+            <span className="text-[11px] font-medium text-slate-400">
+              Quick shortcuts • Search any train across India above
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {popularTrains.map((pt) => (
+              <div
+                key={pt.number}
+                className="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl p-5 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
+              >
+                <div
+                  className="space-y-1 flex-1"
+                  onClick={() => onSelectTrain(pt.number)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-extrabold text-blue-600 text-base">
+                      {pt.number}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-400">•</span>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                      {pt.badge}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition">
+                    {pt.name}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium">{pt.route}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      const match = EXPANDED_TRAINS.find(t => t.number === pt.number);
+                      if (match) setBookingTrain(match);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-600 text-xs font-bold border border-indigo-200 transition"
+                  >
+                    Book
+                  </button>
+                  <span
+                    onClick={() => onSelectTrain(pt.number)}
+                    className="w-9 h-9 rounded-xl bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-400 flex items-center justify-center font-bold text-sm transition"
+                  >
+                    →
                   </span>
                 </div>
-                <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition">
-                  {pt.name}
-                </h4>
-                <p className="text-xs text-slate-500 font-medium">{pt.route}</p>
               </div>
-              <span className="w-9 h-9 rounded-xl bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-400 flex items-center justify-center font-bold text-sm transition">
-                →
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* BOOK SEAT TAB — Full Train Catalog */}
+      {activeTab === 'book' && (
+        <div className="space-y-5">
+          {/* Category filter pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {(['all', 'Vande Bharat', 'Shatabdi', 'Rajdhani'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setCatalogFilter(f)}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition ${
+                  catalogFilter === f
+                    ? f === 'Vande Bharat' ? 'bg-purple-600 text-white shadow-md'
+                    : f === 'Shatabdi' ? 'bg-blue-600 text-white shadow-md'
+                    : f === 'Rajdhani' ? 'bg-cyan-700 text-white shadow-md'
+                    : 'bg-slate-800 text-white shadow-md'
+                    : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                {f === 'all' ? '🚂 All Trains' : f === 'Vande Bharat' ? '🚄 Vande Bharat' : f === 'Shatabdi' ? '⚡ Shatabdi' : '🔵 Rajdhani'}
+                <span className="ml-1.5 opacity-70 font-mono text-[10px]">
+                  ({f === 'all' ? EXPANDED_TRAINS.length : f === 'Vande Bharat' ? VANDE_BHARAT_TRAINS.length : f === 'Shatabdi' ? SHATABDI_TRAINS.length : RAJDHANI_TRAINS.length})
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Search within catalog */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+            <input
+              type="text"
+              value={catalogSearch}
+              onChange={e => setCatalogSearch(e.target.value)}
+              placeholder="Search by train number, name, or station..."
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
+
+          {/* Train list */}
+          <div className="grid gap-3">
+            {catalogTrains.map(train => {
+              const typeColor = train.type === 'Vande Bharat' ? 'bg-purple-100 text-purple-700 border-purple-200'
+                : train.type === 'Shatabdi' ? 'bg-blue-100 text-blue-700 border-blue-200'
+                : train.type === 'Rajdhani' ? 'bg-cyan-100 text-cyan-700 border-cyan-200'
+                : train.type === 'Duronto' ? 'bg-violet-100 text-violet-700 border-violet-200'
+                : 'bg-slate-100 text-slate-700 border-slate-200';
+              return (
+                <div key={train.number} className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-sm transition">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-mono font-black text-blue-600 text-base">{train.number}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${typeColor}`}>{train.type}</span>
+                        <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{train.zone}</span>
+                        {train.maxSpeed >= 160 && <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">⚡ {train.maxSpeed} km/h</span>}
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">{train.name}</h4>
+                      <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 font-medium">
+                        <span className="font-bold text-slate-700">{train.fromCode}</span>
+                        <ArrowRight className="w-3 h-3" />
+                        <span className="font-bold text-slate-700">{train.toCode}</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{train.distanceKm} km</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{train.departureTime} → {train.arrivalTime}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {train.classes.map(cls => (
+                          <span key={cls} className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{cls}</span>
+                        ))}
+                        <span className="text-[10px] text-slate-400">{train.runsOn.length === 7 ? 'Daily' : train.runsOn.join(', ')}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <button
+                        onClick={() => setBookingTrain(train)}
+                        className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition shadow-sm flex items-center gap-1.5"
+                      >
+                        <Ticket className="w-3.5 h-3.5" />
+                        Book
+                      </button>
+                      <button
+                        onClick={() => onSelectTrain(train.number)}
+                        className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition"
+                      >
+                        Track
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {catalogTrains.length === 0 && (
+            <div className="text-center py-12 text-slate-400">
+              <div className="text-4xl mb-3">🔍</div>
+              <p className="font-semibold">No trains found for your search</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Seat Booking Modal */}
+      {bookingTrain && (
+        <SeatBookingModal
+          train={bookingTrain}
+          isOpen={!!bookingTrain}
+          onClose={() => setBookingTrain(null)}
+        />
+      )}
     </div>
   );
 }

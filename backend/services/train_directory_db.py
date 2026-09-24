@@ -2,6 +2,7 @@ import os
 import sys
 import sqlite3
 import csv
+import re
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -526,17 +527,108 @@ class TrainDirectoryDB:
         }
 
     # =========================================================================
-    # FIND TRAINS BETWEEN STATIONS
+    # STATION RESOLUTION AND FIND TRAINS BETWEEN STATIONS
     # =========================================================================
-    def get_trains_between(self, from_station: str, to_station: str, limit: int = 30) -> List[Dict[str, Any]]:
-        src = from_station.strip().upper()
-        dst = to_station.strip().upper()
+    COMMON_STATION_ALIASES = {
+        "MMCT": ["BCT", "MMCT"],
+        "BCT": ["BCT", "MMCT"],
+        "MUMBAI CENTRAL": ["BCT", "MMCT"],
+        "MUMBAI": ["BCT", "CSMT", "LTT", "BDTS"],
+        "CSMT": ["CSMT", "CSTM"],
+        "CSTM": ["CSMT", "CSTM"],
+        "PRYJ": ["PRYJ", "ALD"],
+        "ALD": ["PRYJ", "ALD"],
+        "ALLAHABAD": ["PRYJ", "ALD"],
+        "DDU": ["DDU", "MGS"],
+        "MGS": ["DDU", "MGS"],
+        "MUGHALSARAI": ["DDU", "MGS"],
+        "RKMP": ["RKMP", "HBJ"],
+        "HBJ": ["RKMP", "HBJ"],
+        "HABIBGANJ": ["RKMP", "HBJ"],
+        "AY": ["AY", "AYC"],
+        "AYC": ["AY", "AYC"],
+        "AYODHYA": ["AY", "AYC"],
+        "DELHI": ["NDLS", "DLI", "NZM", "ANVT"],
+        "NEW DELHI": ["NDLS"],
+        "HOWRAH": ["HWH"],
+        "RANCHI": ["RNC"],
+        "KANPUR": ["CNB"],
+        "VARANASI": ["BSB"],
+        "GOA": ["MAO"],
+        "MADGAON": ["MAO"]
+    }
+
+    def resolve_station_codes(self, station_input: str) -> List[str]:
+        if not station_input:
+            return []
+        s = station_input.strip()
+        # 1. Extract code inside parentheses e.g. "Howrah Junction (HWH)" -> "HWH"
+        m = re.search(r'\(([A-Za-z0-9]+)\)', s)
+        if m:
+            code = m.group(1).upper()
+            return self.COMMON_STATION_ALIASES.get(code, [code])
+        
+        s_upper = s.upper()
+        if s_upper in self.COMMON_STATION_ALIASES:
+            return self.COMMON_STATION_ALIASES[s_upper]
 
         conn = self._get_connection()
         cursor = conn.cursor()
 
+        # 2. If 2-5 alphanumeric, check if exact station_code
+        if 2 <= len(s_upper) <= 5 and s_upper.isalnum():
+            cursor.execute("SELECT station_code FROM train_stations WHERE station_code = ? LIMIT 1", (s_upper,))
+            if cursor.fetchone():
+                conn.close()
+                return self.COMMON_STATION_ALIASES.get(s_upper, [s_upper])
+
+        # 3. Clean keywords (junction, jn, central, cantt, etc.)
+        cleaned = re.sub(r'(?i)\b(junction|jn\.?|central|centr\.?|cantt\.?|terminus|terminal|term\.?|city)\b', '', s).strip()
+        c_upper = cleaned.upper()
+        if c_upper in self.COMMON_STATION_ALIASES:
+            conn.close()
+            return self.COMMON_STATION_ALIASES[c_upper]
+
+        cursor.execute("""
+            SELECT DISTINCT station_code FROM train_stations 
+            WHERE station_code LIKE ? OR UPPER(station_name) LIKE ? OR UPPER(station_name) LIKE ?
+            ORDER BY CASE WHEN station_code = ? THEN 1 WHEN UPPER(station_name) LIKE ? THEN 2 ELSE 3 END
+            LIMIT 5
+        """, (f"{c_upper}%", f"{c_upper}%", f"%{c_upper}%", c_upper, f"{c_upper}%"))
+        found = [r[0] for r in cursor.fetchall()]
+        conn.close()
+        return found or [s_upper]
+
+    def _calc_duration(self, dep_str: str, arr_str: str) -> str:
+        try:
+            dep_parts = [int(p) for p in dep_str.split(":")[:2]]
+            arr_parts = [int(p) for p in arr_str.split(":")[:2]]
+            dep_min = dep_parts[0] * 60 + dep_parts[1]
+            arr_min = arr_parts[0] * 60 + arr_parts[1]
+            diff = arr_min - dep_min
+            if diff <= 0:
+                diff += 24 * 60
+            hours = diff // 60
+            mins = diff % 60
+            return f"{hours}h {mins}m" if mins > 0 else f"{hours}h"
+        except Exception:
+            return "Calculated on schedule"
+
+    def get_trains_between(self, from_station: str, to_station: str, limit: int = 30) -> List[Dict[str, Any]]:
+        from_codes = self.resolve_station_codes(from_station)
+        to_codes = self.resolve_station_codes(to_station)
+
+        if not from_codes or not to_codes:
+            return []
+
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        placeholders_from = ",".join(["?"] * len(from_codes))
+        placeholders_to = ",".join(["?"] * len(to_codes))
+
         # Join train_stations twice to find trains that visit from_station then to_station
-        sql = """
+        sql = f"""
             SELECT 
                 t.train_number,
                 t.train_name,
@@ -552,30 +644,34 @@ class TrainDirectoryDB:
             FROM train_stations s1
             JOIN train_stations s2 ON s1.train_number = s2.train_number
             JOIN trains t ON t.train_number = s1.train_number
-            WHERE (s1.station_code = ? OR s1.station_name LIKE ?)
-              AND (s2.station_code = ? OR s2.station_name LIKE ?)
+            WHERE s1.station_code IN ({placeholders_from})
+              AND s2.station_code IN ({placeholders_to})
               AND s1.station_seq < s2.station_seq
             ORDER BY t.train_number ASC
             LIMIT ?
         """
-        cursor.execute(sql, (src, f"%{src}%", dst, f"%{dst}%", limit))
+        params = list(from_codes) + list(to_codes) + [limit]
+        cursor.execute(sql, params)
         rows = cursor.fetchall()
         conn.close()
 
         results = []
         for r in rows:
             dist = r["segment_distance_km"] if r["segment_distance_km"] > 0 else r["total_distance_km"]
+            dep = r["departure_time"] or "08:00"
+            arr = r["arrival_time"] or "16:00"
             results.append({
                 "train_number": r["train_number"],
                 "train_name": r["train_name"],
-                "type": r["train_type"],
+                "type": r["train_type"] or "Superfast Express",
+                "zone": "IR",
                 "source_station_code": r["source_station_code"],
                 "source_station_name": r["source_station_name"],
                 "destination_station_code": r["destination_station_code"],
                 "destination_station_name": r["destination_station_name"],
-                "departure_time": r["departure_time"],
-                "arrival_time": r["arrival_time"],
-                "duration": "Calculated on schedule",
+                "departure_time": dep,
+                "arrival_time": arr,
+                "duration": self._calc_duration(dep, arr),
                 "total_distance_km": dist,
                 "runs_on": ["Daily"]
             })

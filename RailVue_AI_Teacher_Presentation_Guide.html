@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailVue AI — Teacher Defense & Presentation Walkthrough Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    :root {
+      --primary: #0F172A;
+      --brand: #1D4ED8;
+      --brand-light: #EFF6FF;
+      --accent: #0284C7;
+      --success: #047857;
+      --success-light: #ECFDF5;
+      --warning: #B45309;
+      --warning-light: #FFFBEB;
+      --text: #334155;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --card-bg: #FFFFFF;
+      --bg: #F8FAFC;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 48px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    header {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--brand-light);
+      color: var(--brand);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .callout {
+      background: var(--brand-light);
+      border-left: 4px solid var(--brand);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 24px 0;
+      font-size: 14px;
+      color: var(--primary);
+    }
+
+    .callout.success {
+      background: var(--success-light);
+      border-left-color: var(--success);
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 36px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brand);
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+
+    p, li {
+      font-size: 13.5px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px 0;
+      font-size: 12.5px;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      background: #0F172A;
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: #F1F5F9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    pre {
+      background: #0F172A;
+      color: #F8FAFC;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+      line-height: 1.45;
+    }
+
+    .script-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      background: #FAFAFA;
+      margin: 12px 0;
+    }
+
+    .script-time {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--brand);
+      margin-bottom: 4px;
+    }
+
+    .script-text {
+      font-size: 13.5px;
+      color: var(--primary);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .qa-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .qa-q {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+      font-size: 13.5px;
+    }
+
+    .qa-a {
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #FFF;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <span class="badge">Smart India Hackathon • Academic Defense</span>
+      <h1>RailVue AI — Presentation & Defense Guide</h1>
+      <p class="subtitle">Real-Time Dynamic ETA Prediction System for Indian Railways</p>
+    </header>
+
+    <div class="callout">
+      <strong>Core Project Idea in Simple English:</strong> Traditional railway apps show <em>Scheduled Time + Current Delay</em>. If a train is 20 minutes late, the app blindly assumes it will remain 20 minutes late forever. <strong>RailVue AI</strong> replaces this with a Machine Learning engine that predicts <strong>delay deviation</strong> based on speed, remaining distance, track section congestion, weather, and historical corridor averages.
+    </div>
+
+    <h2>1. The Complete End-to-End Data Journey</h2>
+    <p>When a passenger searches for <strong>Train 12019 (Howrah to Ranchi Shatabdi Express)</strong>, here is how data moves through the codebase:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Component</th>
+          <th>What Happens Behind the Scenes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. User Request</strong></td>
+          <td>React Frontend (Vite)</td>
+          <td>Passenger types <code>12019</code>. Frontend sends GET request to <code>/api/trains/search?q=12019</code> via <code>mockTrainService.ts</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>2. Backend API</strong></td>
+          <td>FastAPI (<code>app/api/trains.py</code>)</td>
+          <td>Queries curated SQLite directory database of 1,500+ Indian Railway trains, loading full route halts and station milestones.</td>
+        </tr>
+        <tr>
+          <td><strong>3. Location Tracking</strong></td>
+          <td><code>live_location_engine.py</code></td>
+          <td>Matches distance covered (e.g. 280 of 436 km), identifies active segment (Bokaro → Ranchi), and sets station states (DEPARTED, APPROACHING, UPCOMING).</td>
+        </tr>
+        <tr>
+          <td><strong>4. Feature Assembly</strong></td>
+          <td><code>feature_engineering.py</code></td>
+          <td>Builds 18 numerical features: current speed, remaining km, baseline timetable speed, rain score, fog visibility, and track occupancy ratio.</td>
+        </tr>
+        <tr>
+          <td><strong>5. ML Dual Inference</strong></td>
+          <td><code>ml/predict.py</code></td>
+          <td>18-element vector fed into primary XGBoost Regressor (<code>eta_xgboost.json</code>) predicting +22.0 min deviation. Random Forest runs in parallel.</td>
+        </tr>
+        <tr>
+          <td><strong>6. Physics Validation</strong></td>
+          <td><code>validation_layer.py</code></td>
+          <td>Ensures maximum speed (130 km/h) is not violated and station ETAs remain in strictly increasing chronological order.</td>
+        </tr>
+        <tr>
+          <td><strong>7. Passenger Screen</strong></td>
+          <td><code>TrainDetailsView.tsx</code></td>
+          <td>Displays dynamic ETA (13:37), confidence score (95%), telemetry provenance badge, and explainable delay factors.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. Data Provenance: Real vs. Simulated vs. Future</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Current Status in Codebase</th>
+          <th>File Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Actually Implemented</strong></td>
+          <td>1,500+ trains database, official halt timetables, distance markers, active segment detector, XGBoost/RF models.</td>
+          <td><code>train_directory_db.py</code><br><code>live_location_engine.py</code></td>
+        </tr>
+        <tr>
+          <td><strong>2. Simulated / Fallback</strong></td>
+          <td>15-second background ticker updating fleet distance; Dead-Reckoning fallback estimating position if GPS drops.</td>
+          <td><code>backend/app/main.py</code><br><code>feature_engineering.py:59</code></td>
+        </tr>
+        <tr>
+          <td><strong>3. Future Hardware</strong></td>
+          <td>Direct live locomotive GPS (RTIS) and railway freight signaling (FOIS). Flagged in UI as 'Live GPS'.</td>
+          <td>Production API schema</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h2>3. Weather & Congestion: How We Handled Missing Data</h2>
+    <p>Standard railway logs (IRCTC/Kaggle) never contain weather or traffic telemetry. We solved this through <strong>Multi-Source Data Fusion and Derived Feature Engineering</strong>:</p>
+    <ul>
+      <li><strong>Weather Data Fusion:</strong> We linked external meteorological records (Open-Meteo) containing rainfall in mm, humidity, and winter fog visibility. Merged on relational key <code>(station_code, date)</code> in <code>train_eta_pipeline.py:49</code>. Rainfall &gt;30 mm or fog visibility &lt;200 m generates caution order speed drops.</li>
+      <li><strong>Track Congestion Derivation:</strong> Congestion is an engineered spatial-temporal feature derived from train logs. For every route segment (e.g. <code>CNB_PRYJ</code>), hour, and day of week:
+        <br><code>Congestion Score = 0.35 × (Track Density) + 0.40 × (Average Delay) + 0.25 × (Speed Drop)</code>.
+        <br>Merged on relational key <code>(route_segment, hour, day_of_week)</code>.
+      </li>
+    </ul>
+
+    <h2>4. Inside the 80 XGBoost Trees</h2>
+    <p>XGBoost builds trees <strong>sequentially</strong> as a mistake-correcting relay team:</p>
+    <ul>
+      <li><strong>Tree 1:</strong> Makes a coarse initial guess using remaining distance. Leaves an error (residual).</li>
+      <li><strong>Tree 2:</strong> Specifically predicts and corrects the mistake of Tree 1 using congestion scores.</li>
+      <li><strong>Tree 3 to 80:</strong> Progressively refine errors using weather disruptions, station dwell history, and time of day.</li>
+      <li><strong>Why 80-150 Trees?</strong> 1 tree underfits (MAE ~24 min). 5,000 trees overfits and runs slowly. 80-150 trees with learning rate η = 0.03 hits the optimal sweet spot (MAE 10.37 min, inference under 15 milliseconds).</li>
+    </ul>
+
+    <h2>5. Model Benchmarks & Defending the R² = 0.99 Metric</h2>
+    <div class="callout success">
+      <strong>How to Defend R² = 0.99:</strong> Total journey duration varies from 30 minutes to 1,200 minutes. Remaining distance alone accounts for 99% of total travel time variance—even a basic timetable formula gets R² = 0.9934!
+      <br><br>
+      <strong>The Real Machine Learning Test:</strong> When evaluated on <strong>pure delay deviation</strong>, the baseline has negative R², while our XGBoost model achieves <strong>R² = 0.4993 (~50%)</strong> and reduces arrival error from 26 min to <strong>10.37 minutes</strong>!
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Model Tested</th>
+          <th>Total MAE</th>
+          <th>Total R²</th>
+          <th>Delay-Only MAE</th>
+          <th>Delay-Only R²</th>
+          <th>Role in System</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Naive Zero-Deviation</strong></td>
+          <td>26.13 min</td>
+          <td>0.9850</td>
+          <td>26.13 min</td>
+          <td>-1.7373</td>
+          <td>Assumes train has no delay</td>
+        </tr>
+        <tr>
+          <td><strong>2. Schedule Baseline</strong></td>
+          <td>17.97 min</td>
+          <td>0.9934</td>
+          <td>17.97 min</td>
+          <td>-0.4683</td>
+          <td>Timetable formula benchmark</td>
+        </tr>
+        <tr>
+          <td><strong>3. Random Forest (100 trees)</strong></td>
+          <td>10.62 min</td>
+          <td>0.9977</td>
+          <td>10.62 min</td>
+          <td>0.4810</td>
+          <td>Machine learning baseline</td>
+        </tr>
+        <tr>
+          <td><strong>4. XGBoost Regressor (Primary)</strong></td>
+          <td><strong>10.37 min</strong></td>
+          <td><strong>0.9977</strong></td>
+          <td><strong>10.37 min</strong></td>
+          <td><strong>0.4993</strong></td>
+          <td><strong>Production Model (289 KB, 10ms)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>5. Delay Risk Classifier</strong></td>
+          <td>—</td>
+          <td>—</td>
+          <td>57.3% Acc</td>
+          <td>Macro F1: 0.56</td>
+          <td>Predicts ON_TIME, MINOR, MAJOR</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Zero Data Leakage Guarantee:</strong> We used a <code>JOURNEY_AWARE_RUN_SPLIT</code> (149 training trips vs 37 testing trips). No snapshot rows from the same journey appear in both splits. Future station arrivals and final trip delays were strictly excluded from input features.</p>
+
+    <div class="page-break"></div>
+
+    <h2>6. Two-Minute Presentation Speaking Script</h2>
+
+    <div class="script-box">
+      <div class="script-time">0:00 – 0:20 | The Problem</div>
+      <div class="script-text">"Good morning teachers. Today, railway apps calculate ETAs using a naive formula: scheduled time plus current delay. If a train is 20 minutes late, the app assumes it will stay exactly 20 minutes late for the next 500 kilometers. In reality, trains face traffic congestion, slow down for monsoon rain, or recover time on clear sections. RailVue AI replaces static timetables with dynamic machine learning."</div>
+    </div>
+
+    <div class="script-box">
+      <div class="script-time">0:20 – 0:50 | The Architecture</div>
+      <div class="script-text">"When a passenger searches for a train—like the Howrah-Ranchi Shatabdi—our React frontend queries our FastAPI backend. Our Live Location Engine identifies the active track segment and remaining distance across our curated 1,500-train directory database, with automatic dead-reckoning fallback if GPS drops."</div>
+    </div>
+
+    <div class="script-box">
+      <div class="script-time">0:50 – 1:30 | The Machine Learning Pipeline</div>
+      <div class="script-text">"We convert the train's live state into 18 operational features: speed, track congestion density, rainfall, winter fog, and historical corridor averages. These are fed to our trained XGBoost Regressor. Instead of predicting a 12-hour journey from scratch, the model predicts the schedule deviation, combining official timetable physics with real-time operational disruptions."</div>
+    </div>
+
+    <div class="script-box">
+      <div class="script-time">1:30 – 1:50 | Key Results & Benchmarks</div>
+      <div class="script-text">"Our XGBoost model achieved a Mean Absolute Error of 10.37 minutes, outperforming the standard timetable baseline of 17.97 minutes—an improvement of over 42%. On pure delay prediction, it explains 50% of real-world delay variance with zero data leakage under a journey-aware test split."</div>
+    </div>
+
+    <div class="script-box">
+      <div class="script-time">1:50 – 2:00 | Conclusion</div>
+      <div class="script-text">"RailVue AI gives passengers genuine predictability, and gives rail controllers an early warning system for corridor congestion. Thank you, and we welcome your questions."</div>
+    </div>
+
+    <h2>7. Rapid Teacher Q&A Defense</h2>
+    
+    <div class="qa-card">
+      <div class="qa-q">Q: "Your R² is 0.99. Isn't that overfitted or leaking data?"</div>
+      <div class="qa-a"><strong>A:</strong> "No. R²=0.99 is on absolute travel time because distance naturally dominates trip duration. On pure delay deviation, our R² is 0.4993 (~50%), proving genuine predictive skill with zero target leakage under a journey-aware run split."</div>
+    </div>
+
+    <div class="qa-card">
+      <div class="qa-q">Q: "Where did weather and congestion come from if the dataset didn't have them?"</div>
+      <div class="qa-a"><strong>A:</strong> "We performed Multi-Source Data Fusion: joining Open-Meteo weather records on (station_code, date) and deriving congestion mathematically from active train density on (segment, hour, day)."</div>
+    </div>
+
+    <div class="qa-card">
+      <div class="qa-q">Q: "Why XGBoost over Deep Learning (LSTM)?"</div>
+      <div class="qa-a"><strong>A:</strong> "On tabular operational features (speed, distance, delays), gradient boosted trees outperform neural networks, require zero GPU infrastructure, and execute live predictions in under 15 milliseconds."</div>
+    </div>
+
+    <div class="qa-card">
+      <div class="qa-q">Q: "How do you prevent impossible physical predictions?"</div>
+      <div class="qa-a"><strong>A:</strong> "Our Physics & Sanity Validation Layer caps maximum speed at 130 km/h and strictly enforces increasing chronological station arrival times."</div>
+    </div>
+  </div>
+
+</body>
+</html>

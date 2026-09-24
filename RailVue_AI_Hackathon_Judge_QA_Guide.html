@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailVue AI — Hackathon Judge Q&A Defense Guide</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --brand: #1e40af;
+      --accent: #0369a1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --hint-bg: #f8fafc;
+      --hint-border: #93c5fd;
+      --text: #334155;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+    }
+    .header {
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+    }
+    .header h1 {
+      font-size: 26px;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+    .header .subtitle {
+      font-size: 14px;
+      color: var(--brand);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .intro-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 30px;
+      font-size: 13.5px;
+      color: #1e293b;
+    }
+    .category-card {
+      margin-bottom: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .category-header {
+      background: var(--brand);
+      color: #fff;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .category-header h2 {
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .category-badge {
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .category-body {
+      padding: 18px;
+    }
+    .question-block {
+      margin-bottom: 18px;
+    }
+    .question-block:last-child {
+      margin-bottom: 0;
+    }
+    .question-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+      display: flex;
+      gap: 6px;
+    }
+    .hint-box {
+      background: var(--hint-bg);
+      border-left: 4px solid var(--hint-border);
+      border-top: 1px solid #edf2f7;
+      border-right: 1px solid #edf2f7;
+      border-bottom: 1px solid #edf2f7;
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: #1e293b;
+      margin-left: 12px;
+    }
+    .hint-box strong {
+      color: var(--brand);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 3px;
+    }
+    code {
+      background: #e2e8f0;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .container {
+        box-shadow: none;
+        border: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .category-card {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚆 RailVue AI — Hackathon Judge Q&A Guide</h1>
+      <div class="subtitle">SMART INDIA HACKATHON (SIH 2026) | COMPLETE VIVA &amp; TECHNICAL DEFENSE HANDBOOK</div>
+    </div>
+
+    <div class="intro-box">
+      <strong>Executive Summary &amp; Strategy for Jury Q&amp;A:</strong><br>
+      During a 5–10 minute hackathon evaluation, judges test beyond surface-level UI demos to probe data integrity, feature grounding, failure resiliency, and mathematical choices. This defense guide covers <strong>24 targeted, realistic questions</strong> across 9 core architectural pillars. Each entry includes the exact question a panelist will ask and a clear, evidence-backed answer hint citing real system benchmarks (e.g., MAE 7.31 min vs 66 min baseline, Open-Meteo caching, dead-reckoning fallback, and time-based cross-validation).
+    </div>
+
+    <!-- Category 1 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 1: Weather Data Usage</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> Why did you choose Open-Meteo over other weather APIs like OpenWeatherMap or WeatherAPI, and how are these features injected into your model?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Highlight that Open-Meteo is open-access with no restrictive rate-limit API keys, offers historical ERA5 reanalysis and high-resolution forecasts, and station coordinates (from <code>stations.json</code>) map directly to fetch rainfall (mm), temperature (°C), humidity, and wind speed.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> What happens in production if the Open-Meteo API experiences downtime or network latency?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Mention your graceful degradation strategy: station-wise weather is cached with TTL, and if the API drops, the pipeline automatically falls back to historical seasonal averages (climatological norms) without crashing or blocking the sub-15ms ETA inference loop.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> Did weather features show a strong statistical correlation with delays, or did they only act as marginal noise?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Be honest that weather has a weak linear correlation on normal sunny days, but serves as a critical non-linear trigger for systemic delays during extreme monsoon downpours and winter fog (low temperatures combined with high humidity in Dec–Feb).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 2 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 2: Congestion Score Proxy</h2>
+        <span class="category-badge">2 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> Since Indian Railways doesn't publicly expose real-time track circuit or signaling block occupancy, how exactly is your congestion score derived?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Explain the exact formula from <code>prepare_datasets.py</code>: <i>congestion_score = (delayed_trains / total_trains) × average_delay_magnitude</i>, computed per route segment (<code>station_curr_station_next</code>), hour of day, and day of week.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> What are the limitations of using this historical proxy, and how heavily does the model weigh it compared to physical features?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Acknowledge that it is a trailing statistical proxy rather than live physical block occupancy. Consequently, physical distance remaining and scheduled travel time carry the primary structural weight, while the congestion score provides localized penalties at bottleneck junctions like CNB, PRYJ, and DDU.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 3 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 3: System Architecture &amp; API Resiliency</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> Walk us through the end-to-end data flow from the passenger search in React to the FastAPI prediction response.</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Explain that the React/TypeScript frontend queries <code>/api/trains/{id}/live</code>; FastAPI matches the active track segment and remaining distance, loads the serialized bundle (<code>eta_production_bundle.pkl</code>) in memory for sub-15ms inference, and returns updated ETAs with confidence scores.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> How does your architecture decouple live train tracking from the heavy ML prediction pipeline to handle high concurrency?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Clarify that live telemetry updates run asynchronously via a background polling/ticker service into an in-memory/cache store, while ML predictions are purely stateless read queries that evaluate pre-computed feature vectors without blocking external API calls.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> What happens if the external RailRadar/NTES API fails or rate-limits—and how did you resolve earlier mock-fallback issues?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Explain that earlier unhandled API errors caused inconsistent mock fallbacks; you resolved this by implementing an explicit Dead-Reckoning engine (advancing train position based on sectional speed and elapsed timetable schedule), health status badges, and an active fallback cache.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 4 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 4: ML Architecture &amp; Model Choice</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> Why did a basic Linear Regression model outperform or match advanced gradient-boosted trees like XGBoost and Random Forest on this dataset?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Explain that total remaining travel time has an overwhelmingly linear physical foundation (<i>time ≈ distance / speed + delay</i>); because <code>scheduled_remaining_time</code> and <code>distance_remaining</code> are strong linear anchors, standard Linear Regression achieves high precision (MAE ~7.31 min) without overfitting.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> What did your Stacking Regressor and hyperparameter tuning reveal about XGBoost’s actual contribution?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Point out that in the Ridge meta-learner stacking setup, the coefficient assigned to Linear Regression was ~1.0 while XGBoost was near zero for gross trip time, proving that XGBoost's true value lies in the isolated <i>delay-deviation task</i> (Δy = actual - scheduled) rather than raw journey duration.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> Why did you avoid complex deep learning architectures like LSTMs or Transformers, and how do you justify the interpretability tradeoff?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Emphasize tabular data efficiency, sub-millisecond CPU inference, and operational auditability: railway section controllers require transparent feature weights and SHAP explanations rather than an unexplainable black box when making train routing decisions.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 5 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 5: Feature Engineering &amp; Data Integrity</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> What features were engineered versus raw telemetry, and how did you prevent time-based data leakage during training?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Raw features were station IDs, timestamps, and current delay; engineered features included route segments, historical station/route delay means, and congestion scores. Leakage was strictly prevented by computing all historical aggregations only on training folds and using chronological <code>TimeSeriesSplit</code>.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> How did you encode high-cardinality categorical features like station codes and train numbers?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            State that you used <code>OrdinalEncoder</code> mapping with explicit unknown-category handling and fallback to global segment averages, avoiding sparse matrix blowup from One-Hot Encoding across hundreds of railway stations.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> How does your preprocessing handle missing or corrupted sensor values in transit?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Mention that numeric telemetry fields use median imputation calculated strictly from training distributions, categorical fields use mode imputation, and missing delay numbers default to the scheduled timetable offset.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 6 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 6: Accuracy, Metrics &amp; Benchmarks</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> Can you give us the exact performance numbers of your model versus a naive schedule baseline?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Cite your concrete benchmark results: the naive schedule baseline produced an MAE of ~66 minutes (or ~18–26 mins on zero-deviation), whereas the trained regression model cut MAE down to <strong>~7.31 minutes</strong> (RMSE ~9.22 mins), delivering a &gt;42% error reduction.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> Your model reports an R² of ~0.998. Isn't that suspiciously high or deceptive for railway delays?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Acknowledge this upfront: gross remaining travel time spans hundreds of minutes, which mathematically inflates R²; that is why you also built and evaluated the isolated <strong>Delay-Only Task</strong> (Δy), where the model achieved an honest R² ≈ 0.50 solely on unpredictable delay fluctuations.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> How does the model perform across different journey lengths, particularly on long-distance trips versus short arrivals?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Reference your distance-bucket MAE breakdown: short trips (&lt;200 km) have the lowest absolute error (~3–4 mins), while long-distance hauls (&gt;600 km) accumulate variance (~10–12 mins) due to downstream congestion compounding.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 7 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 7: Novelty &amp; Real-World Viability</h2>
+        <span class="category-badge">2 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> How is RailVue AI superior to the existing NTES or IRCTC live running status that passengers already use?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            NTES relies on static, retrospective timetable offsets (<i>current delay + schedule</i>) that assume a train will maintain its current delay forever; RailVue AI dynamically anticipates future track congestion, section bottlenecks, and weather friction ahead of the train.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> What is the practical roadmap to deploy this prototype at Indian Railways production scale?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Explain that the system can sit on top of the existing CRIS FOIS/COA (Control Office Application) and RTIS (locomotive GPS) data feeds via Kafka message streams, running containerized FastAPI worker pods behind a Redis caching layer for millions of passenger hits.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 8 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 8: Failure Modes &amp; Edge Cases</h2>
+        <span class="category-badge">3 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> What is your 'cold-start' strategy for a newly introduced train or an unfamiliar route with zero historical data?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            The pipeline defaults to the physical kinematic baseline (<i>distance / speed + current delay</i>) combined with broad zonal averages (e.g., Northern Railway historical averages) until dedicated trip history is accumulated.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> How does the model react to extreme unforeseen disruptions like track maintenance, derailments, or sudden protests?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Clarify that standard regression models cannot foresee unannounced physical track closures; to handle this, the system incorporates the <strong>Delay-Risk Classifier</strong> and anomaly detection thresholds to flag abnormal station dwell times and trigger manual controller overrides.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q3.</span> How do you monitor for model drift across changing seasons (e.g., monsoon to winter fog)?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Propose a weekly automated retraining cron job comparing rolling 7-day MAE against the baseline, triggering retrains with updated seasonal weather and congestion weights when performance degrades past an operational threshold.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 9 -->
+    <div class="category-card">
+      <div class="category-header">
+        <h2>Category 9: Team &amp; Project Execution</h2>
+        <span class="category-badge">2 Questions</span>
+      </div>
+      <div class="category-body">
+        <div class="question-block">
+          <div class="question-title"><span>Q1.</span> What was the single most difficult technical bug your team had to debug during this hackathon build?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Discuss solving the subtle data leakage where future journey delays were accidentally leaking into station historical aggregations, which initially produced unrealistically perfect metrics until strict <code>GroupShuffleSplit</code> and chronological splits were enforced.
+          </div>
+        </div>
+        <div class="question-block">
+          <div class="question-title"><span>Q2.</span> If your team had another two weeks to work on RailVue AI, what feature would you prioritize next?</div>
+          <div class="hint-box">
+            <strong>Strong Defense Strategy &amp; Answer</strong>
+            Mention integrating real-time loco-pilot telemetry from RTIS via direct WebSocket streams and building automated rake-turnaround prediction for incoming trains at terminus platforms.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

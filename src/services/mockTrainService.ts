@@ -170,13 +170,43 @@ export class MockTrainService {
     }
 
     const q = query.toLowerCase().trim();
-    const allStations: StationItem[] = Object.entries(STATION_COORDINATES).map(([code, info]) => ({
-      code,
-      name: info.name,
-      city: info.name.split(' ')[0]
-    }));
+    const defaults: StationItem[] = [
+      { code: 'HWH', name: 'Howrah Junction', city: 'Kolkata' },
+      { code: 'RNC', name: 'Ranchi Junction', city: 'Ranchi' },
+      { code: 'NDLS', name: 'New Delhi', city: 'New Delhi' },
+      { code: 'CNB', name: 'Kanpur Central', city: 'Kanpur' },
+      { code: 'PRYJ', name: 'Prayagraj Junction', city: 'Prayagraj' },
+      { code: 'MMCT', name: 'Mumbai Central', city: 'Mumbai' },
+      { code: 'CSMT', name: 'Chhatrapati Shivaji Maharaj Terminus', city: 'Mumbai' },
+      { code: 'MAO', name: 'Madgaon Junction (Goa)', city: 'Goa' },
+      { code: 'BSB', name: 'Varanasi Junction', city: 'Varanasi' },
+      { code: 'RKMP', name: 'Rani Kamlapati', city: 'Bhopal' },
+      { code: 'AGC', name: 'Agra Cantt', city: 'Agra' },
+      { code: 'DDU', name: 'Pt. Deen Dayal Upadhyaya', city: 'Mughalsarai' },
+      { code: 'GAYA', name: 'Gaya Junction', city: 'Gaya' },
+      { code: 'SDAH', name: 'Sealdah', city: 'Kolkata' },
+      { code: 'DGR', name: 'Durgapur', city: 'Durgapur' },
+      { code: 'DHN', name: 'Dhanbad Junction', city: 'Dhanbad' },
+      { code: 'ST', name: 'Surat', city: 'Surat' },
+      { code: 'BRC', name: 'Vadodara Junction', city: 'Vadodara' },
+      { code: 'KOTA', name: 'Kota Junction', city: 'Kota' }
+    ];
 
-    return allStations
+    const stationMap = new Map<string, StationItem>();
+    for (const s of defaults) {
+      stationMap.set(s.code, s);
+    }
+    for (const [code, info] of Object.entries(STATION_COORDINATES)) {
+      if (!stationMap.has(code)) {
+        stationMap.set(code, {
+          code,
+          name: info.name,
+          city: info.name.split(' ')[0]
+        });
+      }
+    }
+
+    return Array.from(stationMap.values())
       .filter(s => s.code.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || (s.city && s.city.toLowerCase().includes(q)))
       .slice(0, 15);
   }
@@ -185,6 +215,28 @@ export class MockTrainService {
   // 4. FIND TRAINS BETWEEN STATIONS
   // =========================================================================
   async getTrainsBetween(fromStation: string, toStation: string): Promise<BetweenTrainResult[]> {
+    const normalize = (s: string) => {
+      if (!s) return '';
+      const m = s.match(/\(([A-Za-z0-9]+)\)/);
+      if (m) return m[1].toUpperCase();
+      const clean = s.replace(/(junction|jn\.?|central|centr\.?|cantt\.?|terminus|terminal|term\.?|city)/gi, '').trim().toUpperCase();
+      const ALIASES: Record<string, string> = {
+        'MMCT': 'MMCT', 'BCT': 'MMCT', 'MUMBAI CENTRAL': 'MMCT', 'MUMBAI': 'CSMT',
+        'CSTM': 'CSMT', 'CSMT': 'CSMT',
+        'PRYJ': 'PRYJ', 'ALD': 'PRYJ', 'ALLAHABAD': 'PRYJ',
+        'DDU': 'DDU', 'MGS': 'DDU', 'MUGHALSARAI': 'DDU',
+        'RKMP': 'RKMP', 'HBJ': 'RKMP',
+        'DELHI': 'NDLS', 'NEW DELHI': 'NDLS',
+        'HOWRAH': 'HWH', 'RANCHI': 'RNC', 'KANPUR': 'CNB',
+        'VARANASI': 'BSB', 'BANARAS': 'BSB', 'GOA': 'MAO', 'MADGAON': 'MAO'
+      };
+      return ALIASES[clean] || ALIASES[s.toUpperCase()] || clean;
+    };
+
+    const fromKey = normalize(fromStation);
+    const toKey = normalize(toStation);
+
+    // 1. Try Backend API first
     try {
       const res = await fetch(`${API_BASE_URL}/trains/between?from=${encodeURIComponent(fromStation)}&to=${encodeURIComponent(toStation)}`);
       if (res.ok) {
@@ -195,6 +247,39 @@ export class MockTrainService {
       }
     } catch (e) {
       console.warn('[RailRadar API] fetch failed, using local routing directory:', e);
+    }
+
+    // 2. Check active fleet trains in this.trains
+    const fleetMatches: BetweenTrainResult[] = [];
+    for (const t of this.trains) {
+      const stops = t.timeline || [];
+      const fromIdx = stops.findIndex(st => normalize(st.stationCode) === fromKey || normalize(st.stationName).includes(fromKey));
+      const toIdx = stops.findIndex(st => normalize(st.stationCode) === toKey || normalize(st.stationName).includes(toKey));
+
+      if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx) {
+        const stFrom = stops[fromIdx];
+        const stTo = stops[toIdx];
+        const dist = (stTo.distanceFromOrigin || t.totalDistance) - (stFrom.distanceFromOrigin || 0);
+        fleetMatches.push({
+          train_number: t.number,
+          train_name: t.name,
+          type: t.type,
+          zone: t.zone,
+          source_station_code: stFrom.stationCode,
+          source_station_name: stFrom.stationName,
+          destination_station_code: stTo.stationCode,
+          destination_station_name: stTo.stationName,
+          departure_time: stFrom.scheduledDeparture || stFrom.scheduledArrival || '08:00',
+          arrival_time: stTo.scheduledArrival || '16:00',
+          duration: `${Math.max(1, Math.round(dist / 65))}h 30m`,
+          total_distance_km: dist > 0 ? dist : t.totalDistance,
+          runs_on: ['Daily']
+        });
+      }
+    }
+
+    if (fleetMatches.length > 0) {
+      return fleetMatches;
     }
 
     return this.getLocalTrainsBetween(fromStation, toStation);

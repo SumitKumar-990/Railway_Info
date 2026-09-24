@@ -23,6 +23,25 @@ router = APIRouter(prefix="/api", tags=["Trains & Passenger Services"])
 
 from services.train_directory_db import train_directory_db
 
+def format_clean_time(val: Any) -> str:
+    """Normalizes ISO datetime or raw timestamps into clean railway HH:MM format."""
+    if not val or val == "--":
+        return "--"
+    s = str(val).strip()
+    if "T" in s:
+        try:
+            time_part = s.split("T")[1]
+            time_part = time_part.split("+")[0].split("-")[0].replace("Z", "")
+            parts = time_part.split(":")
+            if len(parts) >= 2:
+                return f"{parts[0]}:{parts[1]}"
+        except Exception:
+            pass
+    parts = s.split(":")
+    if len(parts) >= 2 and len(parts[0]) <= 2:
+        return f"{parts[0]}:{parts[1]}"
+    return s
+
 # =========================================================================
 # 1. TRAIN SEARCH & LOOKUP (/api/trains/search)
 # =========================================================================
@@ -89,7 +108,14 @@ async def get_trains_between(
     Endpoint: GET /api/trains/between?from=HWH&to=RNC
     """
     db_results = train_directory_db.get_trains_between(from_station, to_station, limit=30)
-    rr_results = railradar_client.get_trains_between_stations(from_station, to_station)
+    
+    # Resolve clean codes for external RailRadar client call
+    resolved_from = train_directory_db.resolve_station_codes(from_station)
+    resolved_to = train_directory_db.resolve_station_codes(to_station)
+    from_code = resolved_from[0] if resolved_from else from_station.strip().upper()
+    to_code = resolved_to[0] if resolved_to else to_station.strip().upper()
+    
+    rr_results = railradar_client.get_trains_between_stations(from_code, to_code)
     
     seen = set()
     combined = []
@@ -100,8 +126,8 @@ async def get_trains_between(
             combined.append(t)
 
     return {
-        "from": from_station.upper(),
-        "to": to_station.upper(),
+        "from": from_code,
+        "to": to_code,
         "count": len(combined),
         "trains": combined
     }
@@ -283,8 +309,15 @@ async def get_live_train_status(
         st_is_halt = st.get("isHalt", True)
         st_pf = st.get("platform", f"PF {(idx % 3) + 1}")
 
-        sch_arr = st.get("scheduledArrival", st.get("scheduled_arrival", "--"))
-        sch_dep = st.get("scheduledDeparture", st.get("scheduled_departure", "--"))
+        sch_arr_raw = st.get("scheduledArrival", st.get("scheduled_arrival", "--"))
+        sch_dep_raw = st.get("scheduledDeparture", st.get("scheduled_departure", "--"))
+        act_arr_raw = st.get("actualArrival")
+        act_dep_raw = st.get("actualDeparture")
+
+        sch_arr = format_clean_time(sch_arr_raw)
+        sch_dep = format_clean_time(sch_dep_raw)
+        act_arr = format_clean_time(act_arr_raw) if act_arr_raw else None
+        act_dep = format_clean_time(act_dep_raw) if act_dep_raw else None
 
         if is_arrived:
             st_status = "TERMINUS" if idx == len(raw_stations) - 1 else "DEPARTED"
@@ -302,9 +335,6 @@ async def get_live_train_status(
                 curr_dist_from_origin=covered_km,
                 next_halt_dist=next_st.get("distance_km", d_km + 10.0)
             )
-
-            act_arr = st.get("actualArrival")
-            act_dep = st.get("actualDeparture")
 
             # Estimate arrival & departure for past and future stations
             if st_status == "DEPARTED" or st_status == "PASSED":
@@ -338,6 +368,10 @@ async def get_live_train_status(
             "actualDeparture": act_dep,
             "predictedArrival": pred_arr,
             "predictedDeparture": pred_dep,
+            "scheduledArrivalRaw": sch_arr_raw,
+            "scheduledDepartureRaw": sch_dep_raw,
+            "actualArrivalRaw": act_arr_raw,
+            "actualDepartureRaw": act_dep_raw,
             "delayMinutes": delay_at_st
         })
 

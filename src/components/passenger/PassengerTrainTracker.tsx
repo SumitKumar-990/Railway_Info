@@ -20,9 +20,12 @@ import {
 } from 'lucide-react';
 import { Train, PassengerDelayExplanation, StationStop } from '../../types';
 import { mockTrainService } from '../../services/mockTrainService';
+import { formatPassengerTime } from '../../utils/timeFormat';
 import { INITIAL_TRAINS } from '../../data/mockData';
 import LiveMapView from '../map/LiveMapView';
 import RailRadarTimeline from '../timeline/RailRadarTimeline';
+import SeatBookingModal from './SeatBookingModal';
+import { EXPANDED_TRAINS } from '../../data/expandedTrains';
 
 interface PassengerTrainTrackerProps {
   train: Train;
@@ -39,6 +42,8 @@ export default function PassengerTrainTracker({
     return new Date().toISOString().split('T')[0];
   });
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const expandedTrainData = EXPANDED_TRAINS.find(t => t.number === (train?.number || train?.id));
 
   const [liveData, setLiveData] = useState<any>(null);
   const [scheduleData, setScheduleData] = useState<any>(null);
@@ -267,6 +272,14 @@ export default function PassengerTrainTracker({
             />
           </div>
 
+          {/* Book Seat Button */}
+          <button
+            onClick={() => setIsBookingOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-md shadow-indigo-500/20 transition"
+          >
+            🎟️ Book Seat
+          </button>
+
           {/* Hackathon Demo Mode Toggle */}
           <button
             onClick={() => setIsDemoMode(!isDemoMode)}
@@ -406,7 +419,7 @@ export default function PassengerTrainTracker({
               <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Destination ETA
             </span>
             <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
-              {predictedDestinationEta}
+              {formatPassengerTime(predictedDestinationEta, false, journeyDate).formatted}
             </div>
             <div className="text-xs font-semibold text-slate-400">
               {runningStatus === 'ARRIVED' ? (
@@ -560,6 +573,7 @@ export default function PassengerTrainTracker({
         currentStationCode={liveData?.previous_station_code || liveData?.source_station_code || 'CURR'}
         selectedStation={selectedStation}
         onSelectStation={(st) => setSelectedStation(st)}
+        journeyDate={journeyDate}
       />
 
       {/* FLOATING "IN TRAIN?" BUTTON (Matching RailRadar UI Specs) */}
@@ -603,6 +617,15 @@ export default function PassengerTrainTracker({
       </div>
     </>
   )}
+
+      {/* Seat Booking Modal */}
+      {expandedTrainData && (
+        <SeatBookingModal
+          train={expandedTrainData}
+          isOpen={isBookingOpen}
+          onClose={() => setIsBookingOpen(false)}
+        />
+      )}
     </div>
   );
 }
